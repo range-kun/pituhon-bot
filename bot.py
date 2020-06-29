@@ -57,15 +57,19 @@ async def ban(ctx,member:discord.Member,*,reason):
 @client.command(pass_context=True)
 @commands.has_permissions(administrator=True)
 async def unban(ctx,*,member):
-    await ctx.message.delete()
     banned_users=await ctx.guild.bans()
     member_name, member_discriminator=member.split('#')
-    for ban_entry in banned_users:
-        user=ban_entry.user
-        if (user.name, user.discriminator)==(member_name,member_discriminator):
-            await ctx.guild.unban(user)
-            await ctx.send('Разбанен {}'.format(user))
-            return
+    info=[(ban_entry.user.name, ban_entry.user.discriminator) for ban_entry in banned_users]
+    if (member_name, member_discriminator)  in info:
+        for ban_entry in banned_users:
+            user=ban_entry.user
+            if (user.name, user.discriminator)==(member_name,member_discriminator):
+                  await ctx.guild.unban(user)
+                  await ctx.send('Разбанен {}'.format(user))
+                  return
+    else:
+        await ctx.send('Пользователь {} не найден в списке забаненых'.format(member))
+
 
 @client.command(pass_context=True)
 async def hello (ctx, arg=None):
@@ -77,14 +81,14 @@ async def hello (ctx, arg=None):
 async def help (ctx):
     emb=discord.Embed(title='Навигация по командам')
 
-    emb.add_field(name='{}clear N', value='удаление N сообщений из чата (по умолчанию 10)'.format(PREFIX))
-    emb.add_field(name='{}unban member', value='разбанить пользователя member (указать ник и id)'.format(PREFIX))
-    emb.add_field(name='{}ban member reason',
-                  value='забанить пользователя member (указать ник) и причину reason'.format(PREFIX))
-    emb.add_field(name='{}kick member', value='кикнуть пользователя member (указать ник)'.format(PREFIX))
-    emb.add_field(name='{}hello фраза', value='поприветсвовать (необязательный аргумент фраза)'.format(PREFIX))
-    emb.add_field(name='{}mute member N', value='Замутить пользователя member на N - часов (по умолчанию N=1)'.format(PREFIX))
-    emb.add_field(name='{}unmute member', value='Размутить пользователя member'.format(PREFIX))
+    emb.add_field(name=f'{PREFIX}clear N', value='удаление N сообщений из чата (по умолчанию 10)')
+    emb.add_field(name=f'{PREFIX}unban member', value='разбанить пользователя member (указать ник и id --> ник#id)')
+    emb.add_field(name=f'{PREFIX}ban member reason',
+                  value='забанить пользователя member (указать ник) и причину reason')
+    emb.add_field(name=f'{PREFIX}kick member', value='кикнуть пользователя member (указать ник)')
+    emb.add_field(name=f'{PREFIX}hello фраза', value='поприветсвовать (необязательный аргумент фраза)')
+    emb.add_field(name=f'{PREFIX}mute member N', value='Замутить пользователя member на N - часов (по умолчанию N=1)')
+    emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
 
     await ctx.send(embed=emb)
 
@@ -122,6 +126,6 @@ async def unmute(ctx, member:discord.Member):
         return
 
 #connect
-token=os.environ.get('BOT_TOKEN')
+token='Njk4OTczNDQ4NzcyMzg2OTI3.Xs7WGA.gZJ4lPGMt5g53c2ZrGFvdFzB3vc'
 
 client.run(token)
