@@ -131,5 +131,9 @@ async def unmute(ctx, member:discord.Member):
         return
 
 #connect
-token=os.environ.get('BOT_TOKEN')
+try:
+    with open('token.txt', 'r') as myfile:
+        token=myfile.readline()
+except:
+    token = os.environ.get('BOT_TOKEN')
 client.run(token)
