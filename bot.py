@@ -2,6 +2,7 @@ import asyncio
 import discord
 from discord.ext import commands
 import os
+import re
 
 PREFIX='?'
 
@@ -23,6 +24,10 @@ async def on_read():
 async def on_message(message):
     await client.process_commands(message)
     msg=message.content.lower()
+    msg_check=re.search(r'[\w\s]*[rр]+[aа]+[nн]+[гrg]+[aаeе]+[\s\w]*([лl]+[oо]+[hxхз]+)[\w\s]*',msg)
+    if msg_check:
+        await message.delete()
+        await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
     if msg in hello_words:
         await message.channel.send('Привет, чо надо, идите нахуй я вас не знаю')
     elif msg in answer_words:
@@ -126,6 +131,6 @@ async def unmute(ctx, member:discord.Member):
         return
 
 #connect
-token=os.environ.get('BOT_TOKEN')
-
+token='Njk4OTczNDQ4NzcyMzg2OTI3.XvpFtQ.-ZRvha7rkHibcMinWB_k4PTc3P8'
+#token=os.environ.get('BOT_TOKEN')
 client.run(token)
