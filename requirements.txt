@@ -1,4 +1,6 @@
 discord.py
-chardet
 websockets
 aiohttp
+json
+asyncio
+urllib

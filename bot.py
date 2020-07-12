@@ -1,8 +1,13 @@
 import asyncio
 import discord
+import aiohttp
 from discord.ext import commands
 import os
+import urllib.parse
+import urllib.request
 import re
+import json
+import random
 
 PREFIX='?'
 
@@ -94,6 +99,7 @@ async def help (ctx):
     emb.add_field(name=f'{PREFIX}hello фраза', value='поприветсвовать (необязательный аргумент фраза)')
     emb.add_field(name=f'{PREFIX}mute member N', value='Замутить пользователя member на N - часов (по умолчанию N=1)')
     emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
+    emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query (пробелы заменить на _)')
 
     await ctx.send(embed=emb)
 
@@ -130,10 +136,42 @@ async def unmute(ctx, member:discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
+#get random phto from google
+
+@commands.command(pass_context=True, aliases=['image', 'img'])
+async def i(ctx, message):
+    await ctx.message.delete()
+    message = ' '.join(message.split('_'))
+
+    async with aiohttp.ClientSession() as session:
+        resp = await session.get(
+            "https://www.googleapis.com/customsearch/v1?q=" + urllib.parse.quote_plus(message) +
+            "&start=" + '1' + "&key=" + API_KEY + "&cx=" + SEARCH_ENGINE_ID + "&searchType=image")
+        result=json.loads(await resp.text())
+
+        try:
+            result['items']
+        except:
+            return await ctx.send('По данному запросу ничего не найдено. '
+                                  'Попробуйте использовать более общий запрос.')
+        if len(result['items']) < 1:
+            return await ctx.send('По данному запросу ничего не найдено. '
+                                  'Попробуйте использовать более общий запрос.')
+        i = random.randint(0, len(result['items'])-1)
+        await ctx.send(result['items'][i]['link'])
+        await ctx.send("Тема запроса: \"" + message + "\"")
+client.add_command(i)
 #connect
 try:
-    with open('token.txt', 'r') as myfile:
-        token=myfile.readline()
+    with open('config.txt', 'r') as myfile:
+        token = myfile.readline()
+        API_KEY = myfile.readline()
+        SEARCH_ENGINE_ID = myfile.readline()
 except:
     token = os.environ.get('BOT_TOKEN')
+    API_KEY = os.environ.get('API_KEY')
+    SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
 client.run(token)
+
+#'https://www.googleapis.com/customsearch/v1?key=' + API_KEY + '&cx=' +
+#            SEARCH_ENGINE_ID + '&q=' + message + '&searchType=image'
