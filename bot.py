@@ -25,11 +25,17 @@ async def on_read():
     print('Bot connected')
 
 @client.event
-#
+async def on_command_error(ctx,error):
+    if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
+        await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2fcек и тогда сделаю'
+                       f'все что смогу для тебя' % error.retry_after)
+    raise error  # re-raise the error so all the errors will still show up in console
+
+@client.event
 async def on_message(message):
     await client.process_commands(message)
     msg=message.content.lower()
-    msg_check=re.search(r'[\w\s]*[rр]+[aа]+[nн]+[гrg]+[aаeе]+[\s\w]*([лl]+[oо]+[hxхз]+)[\w\s]*',msg)
+    msg_check=re.search(r'[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[oо]+\s*[hxхз]+)[\w\s]*',msg)
     if msg_check:
         await message.delete()
         await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
@@ -46,6 +52,7 @@ async def on_message(message):
 @commands.has_permissions(administrator=True)
 async def clear(ctx,amount=10):
     await ctx.channel.purge(limit=amount)
+
 #kick
 @client.command(pass_context=True)
 @commands.has_permissions(administrator=True)
@@ -138,11 +145,16 @@ async def unmute(ctx, member:discord.Member):
 
 #get random phto from google
 
+@commands.cooldown(1, 150, commands.BucketType.user)
 @commands.command(pass_context=True, aliases=['image', 'img'])
-async def i(ctx, message):
+async def i(ctx, *message):
     await ctx.message.delete()
-    message = ' '.join(message.split('_'))
-
+    message = ' '.join(list(message))
+    msg_check = re.search(r'[\w\s]*(?:(?:[тt]+[rр]+[аa]+[нn]+[сc]+[ыe]+)|(?:(?:(?:баб[ыа])|(?:тян)|(?:женщина[ыа])|(?:девушк[иа])) с '
+                          r'(?:(?:ху[яе]ми*)|(?:членом)|(?:письк(?:(?:ой)|(?:ами)))))|(?:трасвиститы*))[\w\s]*',message, re.I)
+    if msg_check:
+        return await ctx.send('На терретории данного канала в соответсвии со Ст. 6.21 КоАП РФ.'
+                              'пропоганда баб с письками запрещена. Но вы всегда можете почертить в автокаде, например.')
     async with aiohttp.ClientSession() as session:
         resp = await session.get(
             "https://www.googleapis.com/customsearch/v1?q=" + urllib.parse.quote_plus(message) +
@@ -157,6 +169,7 @@ async def i(ctx, message):
         if len(result['items']) < 1:
             return await ctx.send('По данному запросу ничего не найдено. '
                                   'Попробуйте использовать более общий запрос.')
+        print([result['items'][i]['link'] for i in range(len(result['items']))])
         i = random.randint(0, len(result['items'])-1)
         await ctx.send(result['items'][i]['link'])
         await ctx.send("Тема запроса: \"" + message + "\"")
@@ -173,5 +186,3 @@ except:
     SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
 client.run(token)
 
-#'https://www.googleapis.com/customsearch/v1?key=' + API_KEY + '&cx=' +
-#            SEARCH_ENGINE_ID + '&q=' + message + '&searchType=image'
