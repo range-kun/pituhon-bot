@@ -1,15 +1,15 @@
 import asyncio
-import discord
-import aiohttp
-from discord.ext import commands
-import os
-import urllib.parse
-import urllib.request
 import re
-import json
 import random
 
+import discord
+import psycopg2
+from discord.ext import commands
+from configuration import *
+import google_search
+
 PREFIX='?'
+
 
 client=commands.Bot(command_prefix=PREFIX)
 client.remove_command('help')
@@ -19,13 +19,23 @@ hello_words=['ky','ку']
 answer_words=['узнать информацию о себе', 'какая информация','команды','команды сервера','что здесь делать']
 goodbye_words=['бб','bb','лан я пошел']
 
-@client.event
+def db():
+    conn = psycopg2.connect(dbname='d3lg89is3baabv', user=DB_USER,
+                            password=DB_PASSWORD,
+                            host='ec2-54-75-229-28.eu-west-1.compute.amazonaws.com', port='5432')
 
-async def on_read():
+    cur = conn.cursor()
+    return conn, cur
+
+@client.event
+async def on_ready():
+    client.add_command(google_search.i)
+    client.add_command(google_search.g)
     print('Bot connected')
 
 @client.event
 async def on_command_error(ctx,error):
+    await ctx.message.delete()
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
         await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2fcек и тогда сделаю'
                        f'все что смогу для тебя' % error.retry_after)
@@ -35,7 +45,7 @@ async def on_command_error(ctx,error):
 async def on_message(message):
     await client.process_commands(message)
     msg=message.content.lower()
-    msg_check=re.search(r'[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[oо]+\s*[hxхз]+)[\w\s]*',msg)
+    msg_check=re.search(r'[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[0oо]+\s*(?:[hxхз]+|(?:}{)+)|(?:]\[)+)[\w\s]*',msg)
     if msg_check:
         await message.delete()
         await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
@@ -45,6 +55,27 @@ async def on_message(message):
         await message.channel.send('напиши help и тебе откроются все тайны')
     elif msg in goodbye_words:
         await message.channel.send('{} пиздуй бороздуй и я попиздил'.format(message.author.name))
+
+@client.command(pass_context=True)
+async def mudrost(ctx):
+    conn, cur = db()
+    cur.execute("SELECT AUThor, FRAZA  from phraces")
+    with conn:
+        rows = [' '.join(i) for i in cur.fetchall()]
+    await ctx.send(random.choice(rows))
+@client.command(pass_context=True)
+async def dob(ctx,*text):
+    if text[-1].endswith('---'):
+        author=text[-1].rstrip('-').capitalize()
+        text=text[:-1]
+    else:
+        author=ctx.author.name
+    text=' '.join(text)
+    conn, cursor = db()
+    with conn:
+        cursor.execute(f"INSERT INTO PHRACES (AUTHOR,FRAZA) \
+                        VALUES ('{author}:','{text}')");
+        conn.commit()
 
 
 #clear
@@ -106,7 +137,7 @@ async def help (ctx):
     emb.add_field(name=f'{PREFIX}hello фраза', value='поприветсвовать (необязательный аргумент фраза)')
     emb.add_field(name=f'{PREFIX}mute member N', value='Замутить пользователя member на N - часов (по умолчанию N=1)')
     emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
-    emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query (пробелы заменить на _)')
+    emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query')
 
     await ctx.send(embed=emb)
 
@@ -143,46 +174,7 @@ async def unmute(ctx, member:discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
-#get random phto from google
-
-@commands.cooldown(1, 150, commands.BucketType.user)
-@commands.command(pass_context=True, aliases=['image', 'img'])
-async def i(ctx, *message):
-    await ctx.message.delete()
-    message = ' '.join(list(message))
-    msg_check = re.search(r'[\w\s]*(?:(?:[тt]+[rр]+[аa]+[нn]+[сc]+[ыe]+)|(?:(?:(?:баб[ыа])|(?:тян)|(?:женщина[ыа])|(?:девушк[иа])) с '
-                          r'(?:(?:ху[яе]ми*)|(?:членом)|(?:письк(?:(?:ой)|(?:ами)))))|(?:трасвиститы*))[\w\s]*',message, re.I)
-    if msg_check:
-        return await ctx.send('На терретории данного канала в соответсвии со Ст. 6.21 КоАП РФ.'
-                              'пропоганда баб с письками запрещена. Но вы всегда можете почертить в автокаде, например.')
-    async with aiohttp.ClientSession() as session:
-        resp = await session.get(
-            "https://www.googleapis.com/customsearch/v1?q=" + urllib.parse.quote_plus(message) +
-            "&start=" + '1' + "&key=" + API_KEY + "&cx=" + SEARCH_ENGINE_ID + "&searchType=image")
-        result=json.loads(await resp.text())
-
-        try:
-            result['items']
-        except:
-            return await ctx.send('По данному запросу ничего не найдено. '
-                                  'Попробуйте использовать более общий запрос.')
-        if len(result['items']) < 1:
-            return await ctx.send('По данному запросу ничего не найдено. '
-                                  'Попробуйте использовать более общий запрос.')
-        print([result['items'][i]['link'] for i in range(len(result['items']))])
-        i = random.randint(0, len(result['items'])-1)
-        await ctx.send(result['items'][i]['link'])
-        await ctx.send("Тема запроса: \"" + message + "\"")
-client.add_command(i)
 #connect
-try:
-    with open('config.txt', 'r') as myfile:
-        token = myfile.readline()
-        API_KEY = myfile.readline()
-        SEARCH_ENGINE_ID = myfile.readline()
-except:
-    token = os.environ.get('BOT_TOKEN')
-    API_KEY = os.environ.get('API_KEY')
-    SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
-client.run(token)
+
+client.run(TOKEN)
 
