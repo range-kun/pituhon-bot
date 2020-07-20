@@ -38,9 +38,9 @@ async def i(ctx, *,message):
         await ctx.send("Картинка по запросу: \"" + message + "\"")
 
 @commands.command(pass_context=True)
-async def g(ctx, *, query):
+async def g(ctx, *, message):
     """Google web search. Ex: [p]g what is discordapp?"""
-    await ctx.query.delete()
+    await ctx.message.delete()
     async with aiohttp.ClientSession() as session:
         if query[0].isdigit():
             i=int(query[0])
