@@ -8,7 +8,7 @@ try:
         DB_USER = myfile.readline().strip()
         DB_PASSWORD = myfile.readline().strip()
 except:
-    token = os.environ.get('BOT_TOKEN')
+    TOKEN = os.environ.get('BOT_TOKEN')
     API_KEY = os.environ.get('API_KEY')
     SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
     DB_USER = os.environ.get('DB_USER')
