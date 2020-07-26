@@ -132,7 +132,7 @@ async def final_message(ctx, row, duration, author_name=False):
     name = f"пользователем <@{ctx.author.id}> "
     return await ctx.send(f'Наибольшее количество сообщений {name*author_name}за {duration} '
                           f'было написано {row[2]}, с общим количеством {row[0]}.\n'
-                          f'Наибольшее количество символов за {duration}'
+                          f'Наибольшее количество символов за {duration} '
                           f'было написано {row[3]}, с общим количеством {row[1]}.')
 
 

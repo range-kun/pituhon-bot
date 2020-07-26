@@ -8,7 +8,7 @@ from discord.ext import commands
 from configuration import API_KEY, SEARCH_ENGINE_ID
 
 
-@commands.cooldown(1, 20, commands.BucketType.user)
+@commands.cooldown(1, 30, commands.BucketType.user)
 @commands.command(pass_context=True, aliases=['image', 'img'])
 async def i(ctx, *, message):       #get random phto from google
     await ctx.message.delete()

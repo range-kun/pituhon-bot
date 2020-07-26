@@ -115,7 +115,7 @@ async def stats(ctx, *, text=None):
         await logs.send_data_peak(cur, ctx, 'month', 'месяц', "%m-%Y")
     elif text == 'day':
         await ctx.send(f'{ctx.author.name} за сегодня было написано '
-                       f'{AUTHORS[ctx.author.id][0]} сообщений и'
+                       f'{AUTHORS[ctx.author.id][0]} сообщений и '
                        f'{AUTHORS[ctx.author.id][1]} символов.')
     elif text == 'week':  # общее  значние сообщений автора за неделю
         await logs.send_data_author_current(cur, ctx, 'logs_for_week', 'неделю', 'author_id')
@@ -220,7 +220,11 @@ async def help(ctx):
                                                        'на N - часов (по умолчанию N=1)')
     emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
     emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query')
-
+    emb.add_field(name=f'{PREFIX}g query', value='Сделать поисковый запрос с текстом query')
+    emb.add_field(name=f'{PREFIX}stats (additional info)',
+                  value='Показать статистику сообщений \n '
+                        'Additional info -- month (max, peak)\n'
+                        'day (max, peak); week')
     await ctx.send(embed=emb)
 
 
