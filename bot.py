@@ -81,7 +81,7 @@ def db():
 async def log():
     await client.wait_until_ready()
     global MESSAGES, SYMBOLS, AUTHORS
-    channel = client.get_channel(698975367326728352)  # 698975228323168271
+    channel = client.get_channel(698975367326728352)  #698975228323168271
     while not client.is_closed():
         conn, cur = db()
         if MESSAGES:
@@ -95,7 +95,7 @@ async def log():
         conn.close()
 
         SYMBOLS, MESSAGES, AUTHORS = 0, 0, {}
-        next_day = sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
+        next_day = 3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
                                                   range(3, 6)), [3600, 60, 1])])
         await asyncio.sleep(next_day)
 
@@ -139,7 +139,7 @@ async def cit(ctx):
 @client.command(pass_context=True)
 async def dob(ctx, *text):
     if text[-1].endswith('##'):
-        author = text[-1].rstrip('-').capitalize()
+        author = text[-1].rstrip('#').capitalize()
         text = text[:-1]
     else:
         author = ctx.author.name
@@ -225,6 +225,10 @@ async def help(ctx):
                   value='Показать статистику сообщений \n '
                         'Additional info -- month (max, peak)\n'
                         'day (max, peak); week')
+    emb.add_field(name=f'{PREFIX}cit', value='Случайная цитата из списка внесенных')
+    emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату, вконце добавить ## '
+                                             'чтобы указать автора (если не указать то будет указан '
+                                             'автор сообщений)')
     await ctx.send(embed=emb)
 
 
