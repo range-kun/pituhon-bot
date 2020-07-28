@@ -4,6 +4,8 @@ import random
 import time
 import psycopg2
 import discord
+import types
+
 
 from discord.ext import commands
 from configuration import *
@@ -77,6 +79,7 @@ def db():
     cur = conn.cursor()
     return conn, cur
 
+
 # log data
 async def log():
     await client.wait_until_ready()
@@ -95,41 +98,47 @@ async def log():
         conn.close()
 
         SYMBOLS, MESSAGES, AUTHORS = 0, 0, {}
-        next_day = 3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
-                                                  range(3, 6)), [3600, 60, 1])])
+        next_day = abs(3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
+                                                            range(3, 6)), [3600, 60, 1])])-3600)
+        print(next_day)
         await asyncio.sleep(next_day)
-
 
 @client.command(pass_context=True)
 async def stats(ctx, *, text=None):
     if text:
         text = text.lower()
     conn, cur = db()
-    if text == 'month max':
-        await logs.send_data_author_max(cur, ctx, 'top_messages_month', 'месяц', "%m-%Y")
-    elif text == 'day max':
-        await logs.send_data_author_max(cur, ctx, 'top_messages_day', 'день')
-    elif text == 'day peak':
-        await logs.send_data_peak(cur, ctx, 'day', 'день')
-    elif text == 'month peak':
-        await logs.send_data_peak(cur, ctx, 'month', 'месяц', "%m-%Y")
-    elif text == 'day':
-        await ctx.send(f'{ctx.author.name} за сегодня было написано '
-                       f'{AUTHORS[ctx.author.id][0]} сообщений и '
-                       f'{AUTHORS[ctx.author.id][1]} символов.')
-    elif text == 'week':  # общее  значние сообщений автора за неделю
-        await logs.send_data_author_current(cur, ctx, 'logs_for_week', 'неделю', 'author_id')
-    elif text == 'month':  # общее  значние сообщений автора за месяц
-        await logs.send_data_author_current(cur, ctx, 'logs_for_month', 'месяц', 'author_id')
-    else: # общее  значние сообщений автора за все время
-        await logs.send_data_author_current(cur, ctx, 'logs', 'весь пирод','id')
+    if text == 'ch':
+        info = discord.Embed(title=f'Статистика по серверу {ctx.message.guild.name}',
+                             color=discord.Color.green())
+        info.set_image(url=ctx.guild.icon_url)
+        info_dict = logs.channel_data(cur)
+        for k, v in {k: v for k, v in info_dict.items() if v}.items():
+            if hasattr(k, '__call__'):
+                k = k()
+            if hasattr(v, '__call__'):
+                v = v()
+            info.add_field(name=k, value=v, inline=False)
+        await ctx.send(embed=info)
+    else:
+        info = discord.Embed(title=f'Статистика по запросу пользователю',
+                             color=discord.Color.green())
+        info.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        info_dict = logs.author_data(ctx, cur, AUTHORS)
+        for k, v in {k: v for k, v in info_dict.items() if v}.items():
+            if hasattr(k, '__call__'):
+                k = k()
+            if hasattr(v, '__call__'):
+                v = v()
+            info.add_field(name=k, value=v, inline=False)
+        await ctx.send(embed=info)
     conn.close()
 
 
 @client.command(pass_context = True)
 async def cit(ctx):
     conn, cur = db()
-    cur.execute("SELECT AUThor, FRAZA  from phraces")
+    cur.execute("SELECT AUTHOR, FRAZA  from phraces")
     with conn:
         rows = [' '.join(i) for i in cur.fetchall()]
     await ctx.send(random.choice(rows))
@@ -138,9 +147,9 @@ async def cit(ctx):
 # add pharace
 @client.command(pass_context=True)
 async def dob(ctx, *text):
-    if text[-1].endswith('##'):
-        author = text[-1].rstrip('#').capitalize()
-        text = text[:-1]
+    if text[0].endswith(':'):
+        author = text[0].replace('_', ' ').rstrip(':').title()
+        text = text[1:]
     else:
         author = ctx.author.name
     text = ' '.join(text)
@@ -149,6 +158,7 @@ async def dob(ctx, *text):
         cursor.execute(f"INSERT INTO PHRACES (AUTHOR,FRAZA) \
                         VALUES ('{author}:','{text}')")
         conn.commit()
+        await ctx.send('Была добавлена фраза: '+author+': '+text)
 
 
 # clear
@@ -207,8 +217,8 @@ async def hello(ctx, arg=None):
 # help
 @client.command(pass_context=True)
 async def help(ctx):
-    emb = discord.Embed(title='Навигация по командам')
-
+    emb = discord.Embed(title='Навигация по командам', colour=discord.Color.blue())
+    emb.set_image(url=r'https://i.gifer.com/origin/6b/6bd46e83cec1fc9390a64e9ae7e085f2_w200.gif')
     emb.add_field(name=f'{PREFIX}clear N', value='удаление N сообщений из чата (по умолчанию 10)')
     emb.add_field(name=f'{PREFIX}unban member', value='разбанить пользователя member'
                                                       '(указать ник и id --> ник#id)')
@@ -226,9 +236,9 @@ async def help(ctx):
                         'Additional info -- month (max, peak)\n'
                         'day (max, peak); week')
     emb.add_field(name=f'{PREFIX}cit', value='Случайная цитата из списка внесенных')
-    emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату, вконце добавить ## '
-                                             'чтобы указать автора (если не указать то будет указан '
-                                             'автор сообщений)')
+    emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату. По умолчанию автор сообщения - автор цитаты. '
+                                             'Что-бы укзаать другого автора, добавить в первом слове двоеточие '
+                                             'Имя_Фамилия: Текст: Цитата автора')
     await ctx.send(embed=emb)
 
 
@@ -241,7 +251,8 @@ async def mute(ctx, member: discord.Member, duration: int = 1):
         await ctx.send(f"{member} уже замучен")
         return
     else:
-        tail = '{} час'.format(duration) + 'a' * (1 < duration % 10 < 5 and duration not in range(5, 21)) + \
+        tail = '{} час'.format(duration) + 'a' * \
+               (1 < duration % 10 < 5 and duration not in range(5, 21)) + \
                'ов' * (4 < duration % 10 < 9 or duration in range(5, 21) or duration % 10 == 0)
         await member.add_roles(mute_role)
         overwrite = discord.PermissionOverwrite(send_messages=False)
