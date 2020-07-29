@@ -4,7 +4,6 @@ import random
 import time
 import psycopg2
 import discord
-import types
 
 
 from discord.ext import commands
@@ -39,7 +38,7 @@ async def on_ready():
 async def on_command_error(ctx, error):
     await ctx.message.delete()
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-        await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю'
+        await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю '
                        f'все что смогу для тебя' % error.retry_after)
     elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
         await ctx.send(f'Команда {ctx.message.content} не была обноружена')
@@ -84,14 +83,14 @@ def db():
 async def log():
     await client.wait_until_ready()
     global MESSAGES, SYMBOLS, AUTHORS
-    channel = client.get_channel(698975367326728352)  #698975228323168271
+    channel = client.get_channel(698975228323168271)  #698975367326728352
     while not client.is_closed():
         conn, cur = db()
         if MESSAGES:
-            await logs.send_data_for_day(channel, AUTHORS, MESSAGES, SYMBOLS)
+            await logs.send_data_for_day(channel, AUTHORS, MESSAGES, SYMBOLS, client)
             logs.update_stats_author_day(conn, cur, AUTHORS)
             logs.update_stats_max_day(cur, MESSAGES, SYMBOLS)
-        await logs.send_data_schedule(cur, channel)
+        await logs.send_data_schedule(cur, channel, client)
         logs.update_stats_schedule(cur)
         logs.update_stats_max_month(cur)
         conn.commit()
@@ -99,8 +98,7 @@ async def log():
 
         SYMBOLS, MESSAGES, AUTHORS = 0, 0, {}
         next_day = abs(3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
-                                                            range(3, 6)), [3600, 60, 1])])-3600)
-        print(next_day)
+                                                            range(3, 6)), [3600, 60, 1])]))
         await asyncio.sleep(next_day)
 
 @client.command(pass_context=True)
@@ -112,26 +110,12 @@ async def stats(ctx, *, text=None):
         info = discord.Embed(title=f'Статистика по серверу {ctx.message.guild.name}',
                              color=discord.Color.green())
         info.set_image(url=ctx.guild.icon_url)
-        info_dict = logs.channel_data(cur)
-        for k, v in {k: v for k, v in info_dict.items() if v}.items():
-            if hasattr(k, '__call__'):
-                k = k()
-            if hasattr(v, '__call__'):
-                v = v()
-            info.add_field(name=k, value=v, inline=False)
-        await ctx.send(embed=info)
+        await logs.final_stats(info, ctx, logs.channel_data, cur)
     else:
         info = discord.Embed(title=f'Статистика по запросу пользователю',
                              color=discord.Color.green())
         info.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-        info_dict = logs.author_data(ctx, cur, AUTHORS)
-        for k, v in {k: v for k, v in info_dict.items() if v}.items():
-            if hasattr(k, '__call__'):
-                k = k()
-            if hasattr(v, '__call__'):
-                v = v()
-            info.add_field(name=k, value=v, inline=False)
-        await ctx.send(embed=info)
+        await logs.final_stats(info, ctx, logs.author_data, cur, AUTHORS)
     conn.close()
 
 
