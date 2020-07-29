@@ -215,14 +215,12 @@ async def help(ctx):
     emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
     emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query')
     emb.add_field(name=f'{PREFIX}g query', value='Сделать поисковый запрос с текстом query')
-    emb.add_field(name=f'{PREFIX}stats (additional info)',
-                  value='Показать статистику сообщений \n '
-                        'Additional info -- month (max, peak)\n'
-                        'day (max, peak); week')
+    emb.add_field(name=f'{PREFIX}stats - показать статистику пользователя ',
+                  value=f'{PREFIX}stats ch - показать статистику канала')
     emb.add_field(name=f'{PREFIX}cit', value='Случайная цитата из списка внесенных')
     emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату. По умолчанию автор сообщения - автор цитаты. '
-                                             'Что-бы укзаать другого автора, добавить в первом слове двоеточие '
-                                             'Имя_Фамилия: Текст: Цитата автора')
+                                             'Что-бы укзаать другого автора, добавить в первом слове двоеточие: '
+                                             'Имя_Фамилия: Текст')
     await ctx.send(embed=emb)
 
 
