@@ -67,7 +67,7 @@ async def on_message(message):
         await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
     if message.content.upper() == message.content and CAPS:
         await message.delete()
-        await message.channel.send(f'{message.author.name}: {message.content.lower()}')
+        await message.channel.send(f'{message.author.name}: {message.content.capitalize()}')
     if msg in hello_words:
         await message.channel.send('Привет, чо надо, идите нахуй я вас не знаю')
     elif msg in answer_words:
