@@ -4,6 +4,7 @@ import random
 import time
 import psycopg2
 import discord
+import itertools
 
 
 from discord.ext import commands
@@ -13,6 +14,8 @@ import logs
 
 MESSAGES, SYMBOLS = 0, 0
 AUTHORS = {}
+CAPS = 0
+CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
 
 PREFIX = '?'
 
@@ -62,6 +65,9 @@ async def on_message(message):
     if msg_check:
         await message.delete()
         await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
+    if message.content.upper() == message.content and CAPS:
+        await message.delete()
+        await message.channel.send(f'{message.author.name}: {message.content.lower()}')
     if msg in hello_words:
         await message.channel.send('Привет, чо надо, идите нахуй я вас не знаю')
     elif msg in answer_words:
@@ -136,6 +142,15 @@ async def cit(ctx):
     with conn:
         rows = [' '.join(i) for i in cur.fetchall()]
     await ctx.send(random.choice(rows))
+
+
+@client.command(pass_context = True)
+async def caps(ctx):
+    global CAPS
+    CAPS = 0 if CAPS else 1
+    caps_info = {0: 'Caps allowed', 1: 'Caps not allowed'}
+    await ctx.send(caps_info[CAPS])
+
 
 
 # add pharace
