@@ -143,7 +143,7 @@ async def cit(ctx):
         rows = [' '.join(i) for i in cur.fetchall()]
     await ctx.send(random.choice(rows))
 
-
+@commands.has_permissions(administrator=True)
 @client.command(pass_context = True)
 async def caps(ctx):
     global CAPS
