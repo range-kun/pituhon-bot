@@ -238,5 +238,5 @@ async def final_stats(info, ctx, func, *args):
         if hasattr(v, '__call__'):
             v = v()
         info.add_field(name=k, value=v, inline=False)
-    return await ctx.send(embed=info)
+    return await ctx.author.send(embed=info)
 
