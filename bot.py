@@ -110,13 +110,23 @@ async def stats(ctx, *, text=None):
         info = discord.Embed(title=f'Статистика по серверу {ctx.message.guild.name}',
                              color=discord.Color.green())
         info.set_image(url=ctx.guild.icon_url)
-        await logs.final_stats(info, ctx, logs.channel_data, cur)
+        return await logs.final_stats(info, ctx, logs.channel_data, cur)
+    elif text == 'day':
+        await logs.author_data_for_period(ctx, cur, AUTHORS, 'За сегодня:')
+    elif text == 'week':
+        await logs.author_data_for_period(ctx, cur, AUTHORS, 'За неделю:')
+    elif text == 'month':
+        await logs.author_data_for_period(ctx, cur, AUTHORS, 'За месяц:')
+    elif text == 'max':
+        await logs.author_data_for_period(ctx, cur, AUTHORS,
+                                          'Максимальные показатели', 'За день', 'За месяц')
     else:
         info = discord.Embed(title=f'Статистика по запросу пользователю',
                              color=discord.Color.green())
         info.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         await logs.final_stats(info, ctx, logs.author_data, cur, AUTHORS)
     conn.close()
+    return
 
 
 @client.command(pass_context = True)
@@ -215,12 +225,13 @@ async def help(ctx):
     emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
     emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query')
     emb.add_field(name=f'{PREFIX}g query', value='Сделать поисковый запрос с текстом query')
-    emb.add_field(name=f'{PREFIX}stats - показать статистику пользователя ',
-                  value=f'{PREFIX}stats ch - показать статистику канала')
     emb.add_field(name=f'{PREFIX}cit', value='Случайная цитата из списка внесенных')
+    emb.add_field(name=f'{PREFIX}stats',
+                  value=f'(доп параметры: day, week, month, max) - показать статистику пользователя \n')
+    emb.add_field(name=f'{PREFIX}stats ch', value= '-показать статистику канала')
     emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату. По умолчанию автор сообщения - автор цитаты. '
                                              'Что-бы укзаать другого автора, добавить в первом слове двоеточие: '
-                                             'Имя_Фамилия: Текст')
+                                             'Имя_Фамилия: Текст', inline=False)
     await ctx.send(embed=emb)
 
 

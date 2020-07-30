@@ -153,12 +153,12 @@ def send_data_author_current(cur, ctx, table, id_num, today_data):
         return f'Кол-во сообщений  =>{row[0]+today_data[0]}.\nКол-во символов  =>{row[1]+today_data[1]}'
 
 
-def send_data_author_max(cur, ctx, table, date_format=None):
+def send_data_author_max(cur, ctx, table, date_format=None, message=None):
     cur.execute(f"SELECT messages, symbols, top_messages_date, top_symbols_date"
                 f" from {table} where author_id={ctx.author.id}")
     row = list(cur.fetchone())
     if not row:
-        return None
+        return message
     else:
         return final_message(row, date_format, edit=True)
 
@@ -190,13 +190,30 @@ def author_data(ctx, cur, authors):
                  (cur, ctx, 'logs_for_week', 'author_id', today_data),
                  'За месяц:': lambda: send_data_author_current
                  (cur, ctx, 'logs_for_month', 'author_id', today_data),
-                 'Максимальные показатели пользователя':'='*25,
+                 'Максимальные показатели':'='*25,
                  'За день': lambda: send_data_author_max
                  (cur, ctx, 'top_messages_day'),
                  'За месяц': lambda: send_data_author_max
                  (cur, ctx, 'top_messages_month', "%m-%Y"),
                  }
     return info_dict
+
+
+async def author_data_for_period(ctx, cur, authors, *period):
+    info = discord.Embed(title=f'Статистика пользователя',
+                         color=discord.Color.green())
+    info.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+    temp_dict = author_data(ctx, cur, authors)
+    info_dict = {}
+    for per in period:
+        info_dict[f'{per}'] = temp_dict[f'{per}']
+    for k, v in {k: v for k, v in info_dict.items() if v}.items():
+        if hasattr(k, '__call__'):
+            k = k()
+        if hasattr(v, '__call__'):
+            v = v()
+        info.add_field(name=k, value=v, inline=False)
+    return await ctx.send(embed=info)
 
 
 def channel_data(cur):
