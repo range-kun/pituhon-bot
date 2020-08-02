@@ -5,11 +5,12 @@ import time
 import psycopg2
 import discord
 import itertools
-
+import urllib.parse
+import google_search
+import translate
 
 from discord.ext import commands
 from configuration import *
-import google_search
 import logs
 
 MESSAGES, SYMBOLS = 0, 0
@@ -34,6 +35,7 @@ goodbye_words = ['бб', 'bb', 'лан я пошел']
 async def on_ready():
     client.add_command(google_search.i)
     client.add_command(google_search.g)
+    client.add_command(translate.trans)
     print('Bot connected')
 
 
@@ -55,17 +57,26 @@ async def on_message(message):
     global AUTHORS, MESSAGES, SYMBOLS
     if message.author.id != 698973448772386927:
         MESSAGES += 1
-        SYMBOLS += len(msg.replace(' ', ''))
-
-        AUTHORS[message.author.id] = [i + x for i, x in zip([1, len(msg.replace(' ', ''))],
+        if re.search(r'<:\w+:\d+>', msg):
+            temp_symb = 1
+            SYMBOLS += 1
+        else:
+            temp_symb = len(msg.replace(' ', ''))
+            SYMBOLS += len(msg.replace(' ', ''))
+        AUTHORS[message.author.id] = [i + x for i, x in zip([1, temp_symb],
                                                             AUTHORS.get(message.author.id, [0, 0]))]
-    msg_check = re.search(
+    url_check = re.search('^(?:https?:\/\/)?(?:w{3}\.)?', msg)
+    range_check = re.search(
         r'[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[0oо]+\s*(?:[hxхз]+|'
         r'(?:}{)+)|(?:]\[)+)[\w\s]*', msg)
-    if msg_check:
+    if url_check and message.content != urllib.parse.unquote(message.content):
         await message.delete()
-        await message.channel.send(f'{message.author.name} слышь чорт, сам ты {msg_check[1]}')
-    if message.content.upper() == message.content and CAPS:
+        message.content = urllib.parse.unquote(message.content)
+        await message.channel.send(f'<@{message.author.id}>: {message.content}')
+    if range_check:
+        await message.delete()
+        await message.channel.send(f'{message.author.name} слышь чорт, сам ты {range_check[1]}')
+    if message.content and message.content.upper() == message.content and CAPS:
         await message.delete()
         await message.channel.send(f'{message.author.name}: {message.content.capitalize()}')
     if msg in hello_words:
@@ -89,23 +100,23 @@ def db():
 async def log():
     await client.wait_until_ready()
     global MESSAGES, SYMBOLS, AUTHORS
-    channel = client.get_channel(698975228323168271)  #698975367326728352
+    channel = client.get_channel(698975367326728352)  #test mode
+    #channel = client.get_channel(698975228323168271)    #run mode
     while not client.is_closed():
         conn, cur = db()
         if MESSAGES:
             await logs.send_data_for_day(channel, AUTHORS, MESSAGES, SYMBOLS, client)
-            logs.update_stats_author_day(conn, cur, AUTHORS)
-            logs.update_stats_max_day(cur, MESSAGES, SYMBOLS)
+            logs.update_stats_author_day(conn, cur, AUTHORS, MESSAGES, SYMBOLS)
         await logs.send_data_schedule(cur, channel, client)
         logs.update_stats_schedule(cur)
-        logs.update_stats_max_month(cur)
         conn.commit()
         conn.close()
 
         SYMBOLS, MESSAGES, AUTHORS = 0, 0, {}
-        next_day = abs(3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
-                                                            range(3, 6)), [3600, 60, 1])]))
+        next_day = 3600*24 - sum([i * x for i, x in zip(map(lambda i: time.localtime()[i],
+                                                            range(3, 6)), [3600, 60, 1])])
         await asyncio.sleep(next_day)
+
 
 @client.command(pass_context=True)
 async def stats(ctx, *, text=None):
@@ -135,22 +146,13 @@ async def stats(ctx, *, text=None):
     return
 
 
-@client.command(pass_context = True)
+@client.command(pass_context=True)
 async def cit(ctx):
     conn, cur = db()
     cur.execute("SELECT AUTHOR, FRAZA  from phraces")
     with conn:
         rows = [' '.join(i) for i in cur.fetchall()]
     await ctx.send(random.choice(rows))
-
-@commands.has_permissions(administrator=True)
-@client.command(pass_context = True)
-async def caps(ctx):
-    global CAPS
-    CAPS = 0 if CAPS else 1
-    caps_info = {0: 'Caps allowed', 1: 'Caps not allowed'}
-    await ctx.send(caps_info[CAPS])
-
 
 
 # add pharace
@@ -168,6 +170,34 @@ async def dob(ctx, *text):
                         VALUES ('{author}:','{text}')")
         conn.commit()
         await ctx.send('Была добавлена фраза: '+author+': '+text)
+
+
+# add hitory log
+@client.command(pass_context=True)
+async def hist(ctx, *, text):
+    conn, cur = db()
+    date_check = re.match(r'(\d{4}[-/.](?:0[1-9]|1[012])[-/.](?:[012]\d|3[01]))', text)
+    if date_check:
+        cur.execute(f"SELECT log from history_logs where date='{date_check[1]}'")
+        history_log = cur.fetchall()
+        if history_log:
+            await ctx.send(f'Воспоминания за {date_check[1]}:')
+            for log in history_log:
+                await ctx.send(f'{log[0]}')
+        else:
+            await ctx.send('На указанную дату логов не найдено')
+    else:
+        cur.execute(f"INSERT INTO history_logs (date, log) values ('{logs.today()}', '{text.capitalize()}')")
+        await ctx.send(f'{logs.today()} - была добавлена фраза: {text}')
+        conn.commit()
+
+
+@client.command(pass_context=True)
+async def caps(ctx):
+    global CAPS
+    CAPS = 0 if CAPS else 1
+    caps_info = {0: 'Caps allowed', 1: 'Caps not allowed'}
+    await ctx.send(caps_info[CAPS])
 
 
 # clear
@@ -226,29 +256,35 @@ async def hello(ctx, arg=None):
 # help
 @client.command(pass_context=True)
 async def help(ctx):
-    emb = discord.Embed(title='Навигация по командам', colour=discord.Color.blue())
-    emb.set_image(url=r'https://i.gifer.com/origin/6b/6bd46e83cec1fc9390a64e9ae7e085f2_w200.gif')
-    emb.add_field(name=f'{PREFIX}clear N', value='удаление N сообщений из чата (по умолчанию 10)')
-    emb.add_field(name=f'{PREFIX}unban member', value='разбанить пользователя member'
-                                                      '(указать ник и id --> ник#id)')
-    emb.add_field(name=f'{PREFIX}ban member reason',
-                  value='забанить пользователя member (указать ник) и причину reason')
-    emb.add_field(name=f'{PREFIX}kick member', value='кикнуть пользователя member (указать ник)')
-    emb.add_field(name=f'{PREFIX}hello фраза', value='поприветсвовать (необязательный аргумент фраза)')
-    emb.add_field(name=f'{PREFIX}mute member N', value='Замутить пользователя member '
-                                                       'на N - часов (по умолчанию N=1)')
-    emb.add_field(name=f'{PREFIX}unmute member', value='Размутить пользователя member')
-    emb.add_field(name=f'{PREFIX}i query', value='Искать картинку с названием query')
-    emb.add_field(name=f'{PREFIX}g query', value='Сделать поисковый запрос с текстом query')
-    emb.add_field(name=f'{PREFIX}cit', value='Случайная цитата из списка внесенных')
-    emb.add_field(name=f'{PREFIX}stats',
-                  value=f'(доп параметры: day, week, month, max) - показать статистику пользователя \n')
-    emb.add_field(name=f'{PREFIX}stats ch', value= '-показать статистику канала')
-    emb.add_field(name=f'{PREFIX}dob', value='Добавить цитату. По умолчанию автор сообщения - автор цитаты. '
-                                             'Что-бы укзаать другого автора, добавить в первом слове двоеточие: '
-                                             'Имя_Фамилия: Текст', inline=False)
-    await ctx.send(embed=emb)
-
+    await ctx.send('**Навигация по командам**')
+    message = f'{PREFIX}clear N'.ljust(20) + '-- удаление N сообщений из чата (по умолчанию 10)\n' + \
+              f'{PREFIX}ban member reason'.ljust(20) +'-- забанить пользователя member ' \
+              f'(@упомянуть) указать причину reason\n' + \
+              f'{PREFIX}unban member'.ljust(20) + '-- разбанить пользователя member' +\
+              f'(указать ник и id -> ник#id)\n' + \
+              f'{PREFIX}kick member'.ljust(20) + '-- кикнуть пользователя member (@упомянуть)\n' + \
+              f'{PREFIX}mute member N'.ljust(20) + '-- замутить пользователя @member '  + \
+              'на N - часов (по умолчанию на час )\n' + \
+              f'{PREFIX}unmute member'.ljust(20) + '-- размутить пользователя member\n' + \
+              f'{PREFIX}caps'.ljust(20) + '-- разрешить/запретить CapsLock \n' + \
+              f'{PREFIX}hello фраза'.ljust(20) + '-- поздоровайтесь с ботом (необязательный аргумент фраза) \n' + \
+              f'{PREFIX}i query'.ljust(20) + '-- искать картинку с названием query \n' + \
+              f'{PREFIX}g query'.ljust(20) + '-- сделать поисковый запрос в google с текстом query \n' + \
+              f'{PREFIX}cit'.ljust(20) + '-- случайная цитата из списка внесенных \n' + \
+              f'{PREFIX}dob'.ljust(20) + '-- добавить цитату. По умолчанию автор сообщения - автор цитаты. \n' + \
+              'Что-бы укзаать другого автора, добавить в первом слове двоеточие: ' \
+              'Имя_Фамилия: Текст \n' + \
+              f'{PREFIX}stats (доп параметры: day, week, month, max) -- показать статистику пользователя \n' + \
+              f'{PREFIX}stats ch'.ljust(20) + '-- показать статистику канала \n' + \
+              f'{PREFIX}hist дата'.ljust(20) + '-- искать воспоминания за указанную дату (формат даты гггг-мм-дд) \n' + \
+              f'{PREFIX}hist текст'.ljust(20) + '-- добавить записть в воспоминания за сегодняшнее число \n' + \
+              f'{PREFIX}translate Язык текст -- перевести текст на указанный язык'
+    retStr = str(f"```yaml\n{message}```")
+    await ctx.send(retStr)
+    languages_info = discord.Embed(title='Список языков и их сокращения',
+                                   url='https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351'
+                                       'dbc6eef269efa0bc/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json')
+    await ctx.send(embed=languages_info)
 
 # mute
 @client.command()

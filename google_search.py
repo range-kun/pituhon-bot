@@ -54,6 +54,6 @@ async def g(ctx, *, query):
                             "https://www.googleapis.com/customsearch/v1?q=" + urllib.parse.quote_plus(query) +
                             "&start=1" + "&key=" + API_KEY + "&cx=" + SEARCH_ENGINE_ID)
         result = json.loads(await resp.text())
-        await ctx.send(result['items'][i]['link'])
+        await ctx.send(urllib.parse.unquote(result['items'][i]['link']))
         await ctx.send("Ссылка по запросу: \"" + query + "\"")
 

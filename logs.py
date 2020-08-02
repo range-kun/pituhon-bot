@@ -6,7 +6,11 @@ import discord
 def yesterday():
     return datetime.date(datetime.now() - timedelta(days=1))
 
+def today():
+    return datetime.date(datetime.now())
 
+
+#######STATS for day############
 async def send_data_for_day(channel, authors, messages, symbols, client):
     emb = discord.Embed(title='Информация по серверу за 24 часа', colour=discord.Color.dark_blue())
     temp_list_messages = sorted(list(authors.items()),
@@ -28,7 +32,7 @@ async def send_data_for_day(channel, authors, messages, symbols, client):
     await channel.send(embed=emb)
 
 
-def update_stats_author_day(conn, cur, authors):
+def update_stats_author_day(conn, cur, authors, messages, symbols):
     for i, v in authors.items():
         cur.execute(f'SELECT MESSAGES, SYMBOLS FROM LOGS WHERE ID={i}')
         row = cur.fetchone()
@@ -40,6 +44,7 @@ def update_stats_author_day(conn, cur, authors):
         else:
             for table, id_num in update_dict.items():
                 cur.execute(f'SELECT MESSAGES, SYMBOLS FROM {table} WHERE {id_num}={i}')
+
                 row_1 = cur.fetchone()
                 try:
                     temp = tuple(b + x for b, x in zip(row_1, v))
@@ -51,25 +56,19 @@ def update_stats_author_day(conn, cur, authors):
                                 WHERE {id_num}={i}")
         conn.commit()
         update_author_max_stats(cur, 'top_messages_day', i, v)
+        update_stats_max_day(cur, messages, symbols)
 
 
-def update_author_max_stats(cur, table, id_num, values):
-    cur.execute(f'SELECT MESSAGES, SYMBOLS FROM {table} WHERE author_id={id_num}')
-    new_messages, new_symbols = values
-    try:
-        top_messages, top_symbols = cur.fetchone()
-    except TypeError:
-        cur.execute(f"INSERT INTO {table} (author_id, MESSAGES, SYMBOLS, top_messages_date, top_symbols_date) "
-                    f"VALUES ({id_num}, {new_messages}, {new_symbols}, '{yesterday()}', '{yesterday()}')")
-    else:
-        if new_messages > top_messages:
-            cur.execute(f"UPDATE {table} SET messages={new_messages}, "
-                        f"top_messages_date='{yesterday()}' where author_id={id_num}")
-        if new_symbols > top_symbols:
-            cur.execute(f"UPDATE {table} SET symbols={new_symbols}, "
-                        f"top_symbols_date='{yesterday()}' where author_id={id_num}")
+def update_stats_max_day(cur, messages, symbols):
+    cur.execute("SELECT MESSAGES, SYMBOLS FROM ACTIVITY where period='day'")
+    temp_mes, temp_symb = cur.fetchone()
+    if messages > temp_mes:
+        cur.execute(f"UPDATE activity SET DATE_PEAK_MESSAGES='{yesterday()}', MESSAGES={messages} where period='day'")
+    elif symbols > temp_symb:
+        cur.execute(f"UPDATE activity SET DATE_PEAK_SYMBOLS='{yesterday()}', SYMBOLS={symbols}  where period='day'")
 
 
+#######SCHEDULE STATS############
 async def send_data_schedule(cur, channel, client):
     send_data_list = {'logs_for_month': [time.localtime()[2] == 1,
                                          'Ежемесячная информация', 'месяц'],
@@ -101,6 +100,7 @@ async def send_data_schedule(cur, channel, client):
 
 
 def update_stats_schedule(cur):
+    update_stats_max_month(cur)
     cur.execute(f'SELECT ID FROM LOGS')
     row = (i[0] for i in cur.fetchall())
     update_data_list = {'top_messages_month': [time.localtime()[2] == 1, 'logs_for_month']}
@@ -111,15 +111,13 @@ def update_stats_schedule(cur):
                 row = cur.fetchone()
                 if row:
                     update_author_max_stats(cur, key, i, row)
-
-
-def update_stats_max_day(cur, messages, symbols):
-    cur.execute("SELECT MESSAGES, SYMBOLS FROM ACTIVITY where period='day'")
-    temp_mes, temp_symb = cur.fetchone()
-    if messages > temp_mes:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_MESSAGES='{yesterday()}', MESSAGES={messages} where period='day'")
-    elif symbols > temp_symb:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_SYMBOLS='{yesterday()}', SYMBOLS={symbols}  where period='day'")
+    zero_list = {'logs_for_month': time.localtime()[2] == 1, 'logs_for_week': datetime.today().isoweekday() == 7}
+    for table, condition in zero_list.items():
+        if condition:
+            cur.execute(f"SELECT author_id from {table} where messages>0")
+            row_1 = cur.fetchall()
+            for i in row_1:
+                cur.execute(f"UPDATE {table} SET messages=0, symbols=0 where author_id={i[0]}")
 
 
 def update_stats_max_month(cur):
@@ -135,7 +133,25 @@ def update_stats_max_month(cur):
                     f"SYMBOLS={new_symb} where period='month'")
 
 
-#########stats############
+
+####max stats####
+def update_author_max_stats(cur, table, id_num, values):
+    cur.execute(f'SELECT MESSAGES, SYMBOLS FROM {table} WHERE author_id={id_num}')
+    new_messages, new_symbols = values
+    try:
+        top_messages, top_symbols = cur.fetchone()
+    except TypeError:
+        cur.execute(f"INSERT INTO {table} (author_id, MESSAGES, SYMBOLS, top_messages_date, top_symbols_date) "
+                    f"VALUES ({id_num}, {new_messages}, {new_symbols}, '{yesterday()}', '{yesterday()}')")
+    else:
+        if new_messages > top_messages:
+            cur.execute(f"UPDATE {table} SET messages={new_messages}, "
+                        f"top_messages_date='{yesterday()}' where author_id={id_num}")
+        if new_symbols > top_symbols:
+            cur.execute(f"UPDATE {table} SET symbols={new_symbols}, "
+                        f"top_symbols_date='{yesterday()}' where author_id={id_num}")
+
+#########stats command############
 
 def send_channel_peak(cur, period, date_format=None,):
     cur.execute(f"SELECT messages, symbols, date_peak_messages, date_peak_symbols"
