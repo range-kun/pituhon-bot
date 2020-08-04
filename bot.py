@@ -47,6 +47,8 @@ async def on_command_error(ctx, error):
                        f'все что смогу для тебя' % error.retry_after)
     elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
         await ctx.send(f'Команда {ctx.message.content} не была обноружена')
+    elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
+        await ctx.send(f'Команде {ctx.message.content} не хватает аргументов')
     raise error  # re-raise the error so all the errors will still show up in console
 
 
@@ -76,7 +78,7 @@ async def on_message(message):
     if range_check:
         await message.delete()
         await message.channel.send(f'{message.author.name} слышь чорт, сам ты {range_check[1]}')
-    if message.content and message.content.upper() == message.content and CAPS:
+    if any(i.isalpha() for i in msg) and message.content.upper() == message.content and CAPS:
         await message.delete()
         await message.channel.send(f'{message.author.name}: {message.content.capitalize()}')
     if msg in hello_words:
@@ -176,9 +178,10 @@ async def dob(ctx, *text):
 @client.command(pass_context=True)
 async def hist(ctx, *, text):
     conn, cur = db()
-    date_check = re.match(r'(\d{4}[-/.](?:0[1-9]|1[012])[-/.](?:[012]\d|3[01]))', text)
+    date_check = re.match(r'(\d{2}-\d{2}-\d{4})', text)
     if date_check:
-        cur.execute(f"SELECT log from history_logs where date='{date_check[1]}'")
+        date = '-'.join(date_check[1].split('-')[::-1])
+        cur.execute(f"SELECT log from history_logs where date='{date}'")
         history_log = cur.fetchall()
         if history_log:
             await ctx.send(f'Воспоминания за {date_check[1]}:')
@@ -188,7 +191,7 @@ async def hist(ctx, *, text):
             await ctx.send('На указанную дату логов не найдено')
     else:
         cur.execute(f"INSERT INTO history_logs (date, log) values ('{logs.today()}', '{text.capitalize()}')")
-        await ctx.send(f'{logs.today()} - была добавлена фраза: {text}')
+        await ctx.send(f'{logs.today().strftime("%d-%m-%Y")} - была добавлена фраза: {text}')
         conn.commit()
 
 
@@ -270,13 +273,14 @@ async def help(ctx):
               f'{PREFIX}hello фраза'.ljust(20) + '-- поздоровайтесь с ботом (необязательный аргумент фраза) \n' + \
               f'{PREFIX}i query'.ljust(20) + '-- искать картинку с названием query \n' + \
               f'{PREFIX}g query'.ljust(20) + '-- сделать поисковый запрос в google с текстом query \n' + \
+              f'если после g указать цифру n (небольше 10) выдаст первые n запросов\n' + \
               f'{PREFIX}cit'.ljust(20) + '-- случайная цитата из списка внесенных \n' + \
               f'{PREFIX}dob'.ljust(20) + '-- добавить цитату. По умолчанию автор сообщения - автор цитаты. \n' + \
               'Что-бы укзаать другого автора, добавить в первом слове двоеточие: ' \
               'Имя_Фамилия: Текст \n' + \
               f'{PREFIX}stats (доп параметры: day, week, month, max) -- показать статистику пользователя \n' + \
               f'{PREFIX}stats ch'.ljust(20) + '-- показать статистику канала \n' + \
-              f'{PREFIX}hist дата'.ljust(20) + '-- искать воспоминания за указанную дату (формат даты гггг-мм-дд) \n' + \
+              f'{PREFIX}hist дата'.ljust(20) + '-- искать воспоминания за указанную дату (формат даты дд-мм-гггг) \n' + \
               f'{PREFIX}hist текст'.ljust(20) + '-- добавить записть в воспоминания за сегодняшнее число \n' + \
               f'{PREFIX}translate Язык текст -- перевести текст на указанный язык'
     retStr = str(f"```yaml\n{message}```")

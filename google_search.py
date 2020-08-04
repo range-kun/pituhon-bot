@@ -2,6 +2,7 @@ import aiohttp
 import urllib.parse
 import re
 import random
+import discord
 import json
 
 from discord.ext import commands
@@ -36,7 +37,7 @@ async def i(ctx, *, message):       #get random phto from google
             return await ctx.send('По данному запросу ничего не найдено. '
                                   'Попробуйте использовать более общий запрос.')
         i = random.randint(0, len(result['items'])-1)
-        await ctx.send(result['items'][i]['link'])
+        await ctx.send(urllib.parse.unquote(result['items'][i]['link']))
         await ctx.send("Картинка по запросу: \"" + message + "\"")
 
 
@@ -46,14 +47,20 @@ async def g(ctx, *, query):
     await ctx.message.delete()
     async with aiohttp.ClientSession() as session:
         if query[0].isdigit():
-            i = int(query[0])
-            query = query[1:]
+            i = int(query[0]) if int(query[0])<10 else 9
+            query = query[1:].strip()
         else:
             i = 0
         resp = await session.get(
                             "https://www.googleapis.com/customsearch/v1?q=" + urllib.parse.quote_plus(query) +
                             "&start=1" + "&key=" + API_KEY + "&cx=" + SEARCH_ENGINE_ID)
         result = json.loads(await resp.text())
-        await ctx.send(urllib.parse.unquote(result['items'][i]['link']))
-        await ctx.send("Ссылка по запросу: \"" + query + "\"")
+        if not i:
+            await ctx.send(urllib.parse.unquote(result['items'][i]['link']))
+            await ctx.send("Ссылка по запросу: \"" + query + "\"")
+        else:
+            info = discord.Embed(title=f'Ссылки по запросу {query}', color=discord.Color.green())
+            for k in range(i):
+                info.add_field(name=str(k+1), value=urllib.parse.unquote(result['items'][k]['link']), inline=False)
+            await ctx.send(embed=info)
 
