@@ -46,9 +46,9 @@ async def g(ctx, *, query):
     """Google web search. Ex: [p]g what is discordapp?"""
     await ctx.message.delete()
     async with aiohttp.ClientSession() as session:
-        if query[0].isdigit():
-            i = int(query[0]) if int(query[0])<10 else 9
-            query = query[1:].strip()
+        if query[-1].isdigit():
+            i = int(query[0])
+            query = query[:-1].strip()
         else:
             i = 0
         resp = await session.get(
