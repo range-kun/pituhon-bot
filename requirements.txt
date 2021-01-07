@@ -5,4 +5,4 @@ asyncio
 urllib3==1.25.9
 psycopg2==2.8.5
 bs4==0.0.1
-lxml==4.5.2
+lxml==4.6.2
