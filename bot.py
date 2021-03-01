@@ -93,7 +93,7 @@ async def on_message(message):
 def db():
     conn = psycopg2.connect(dbname='d3lg89is3baabv', user=DB_USER,
                             password=DB_PASSWORD,
-                            host='ec2-54-75-229-28.eu-west-1.compute.amazonaws.com', port='5432')
+                            host='ec2-52-211-144-45.eu-west-1.compute.amazonaws.com', port='5432')
     cur = conn.cursor()
     return conn, cur
 
