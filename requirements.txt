@@ -2,7 +2,7 @@ discord.py
 websockets
 aiohttp
 asyncio
-urllib3==1.25.9
+urllib3==1.26.5
 psycopg2==2.8.5
 bs4==0.0.1
 lxml==4.6.3
