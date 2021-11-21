@@ -6,19 +6,19 @@ import discord
 import json
 
 from discord.ext import commands
-from configuration import API_KEY, SEARCH_ENGINE_ID
+from configuration import API_KEY, MAIN_CHANNEL_ID, SEARCH_ENGINE_ID
 
 
 @commands.cooldown(1, 17, commands.BucketType.user)
 @commands.command(pass_context=True, aliases=['image', 'img'])
-async def i(ctx, *, message):       #get random phto from google
+async def i(ctx, *, message):     # get random photo from google
     await ctx.message.delete()
-    if ctx.channel.id != 734684085569454111:
-        msg_check = re.search(r'[\w\s]*(?:(?:[тt]+[rр]+[аa]+[нn]+[сc]+[ыe]+)|'
+    if ctx.channel.id == MAIN_CHANNEL_ID:
+        restricted_content = re.search(r'[\w\s]*(?:(?:[тt]+[rр]+[аa]+[нn]+[сc]+[ыe]+)|'
                               r'(?:(?:(?:баб[ыа])|(?:тян)|(?:женщина[ыа])|(?:девушк[иа])) с '
                               r'(?:(?:ху[яе]ми*)|(?:членом)|(?:письк(?:(?:ой)|(?:ами)))))'
                               r'|(?:трасвиститы*))[\w\s]*', message, re.I)
-        if msg_check:
+        if restricted_content:
             return await ctx.send('На терретории данного канала в соответсвии со Ст. 6.21 КоАП РФ.'
                                   'пропоганда баб с письками запрещена. Но вы всегда можете '
                                   'почертить в автокаде, например.')
@@ -29,15 +29,15 @@ async def i(ctx, *, message):       #get random phto from google
         result = json.loads(await resp.text())
         try:
             result['items']
-        except:
+        except Exception:
             return await ctx.send('По данному запросу ничего'
                                   ' не найдено. '
                                   'Попробуйте использовать более общий запрос.')
         if len(result['items']) < 1:
             return await ctx.send('По данному запросу ничего не найдено. '
                                   'Попробуйте использовать более общий запрос.')
-        i = random.randint(0, len(result['items'])-1)
-        await ctx.send(urllib.parse.unquote(result['items'][i]['link']))
+        random_number = random.randint(0, len(result['items'])-1)
+        await ctx.send(urllib.parse.unquote(result['items'][random_number]['link']))
         await ctx.send("Картинка по запросу: \"" + message + "\"")
 
 

@@ -3,6 +3,8 @@ websockets
 aiohttp
 asyncio
 urllib3==1.26.5
-psycopg2==2.8.5
+psycopg2==2.9.2
 bs4==0.0.1
-lxml==4.6.3
+lxml==4.6.4
+SQLAlchemy==1.4.27
+pyyaml==6.0

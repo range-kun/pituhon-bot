@@ -1,7 +1,6 @@
 import aiohttp
 import discord
 
-
 from bs4 import BeautifulSoup
 from discord.ext import commands
 
@@ -16,7 +15,6 @@ headers_Get = {
     }
 
 
-
 @commands.command(pass_context=True)
 async def trans(ctx, to_language, *, msg):
     """Translates words from one language to another. Do [p]help translate for more information.
@@ -24,16 +22,17 @@ async def trans(ctx, to_language, *, msg):
     [p]translate <new language> <words> - Translate words from one language to another. Full language names must be used.
     The original language will be assumed automatically.
     """
-    #await ctx.message.delete()
+
     async with aiohttp.ClientSession() as session:
-        resp = await session.get("https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351dbc6eef269efa0bc"
-                                        "/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json")
+        resp = await session.get(
+            "https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351dbc6eef269efa0bc/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json"
+        )
         lang_codes = await resp.json(content_type='text/plain')
     real_language = False
     to_language = to_language.lower()
-    if to_language == 'rus' or to_language == 'ru':
+    if to_language in ["rus", "ru"]:
         to_language = 'russian'
-    elif to_language == 'eng' or to_language == 'en':
+    elif to_language in ["eng", "en"]:
         to_language = 'english'
     elif to_language == 'ukr':
         to_language = 'ukrainian'
@@ -47,8 +46,11 @@ async def trans(ctx, to_language, *, msg):
 
     if real_language:
         async with aiohttp.ClientSession() as session:
-            resp = await session.get("https://translate.google.com/m",
-                                        params={"hl": to_language, "sl": "auto", "q": msg}, headers=headers_Get)
+            resp = await session.get(
+                    "https://translate.google.com/m",
+                    params={"hl": to_language, "sl": "auto", "q": msg},
+                    headers=headers_Get
+            )
             translate = await resp.text()
             result = str(translate).split('class="t0">')[1].split("</div>")[0]
             result = BeautifulSoup(result, "lxml").text

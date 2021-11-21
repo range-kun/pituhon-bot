@@ -1,34 +1,35 @@
 import asyncio
-import re
+import itertools
 import random
+import re
 import time
+import urllib.parse
+
 import psycopg2
 import discord
-import itertools
-import urllib.parse
+import yaml
+from discord.ext import commands
+
 import google_search
 import translate
-
-from discord.ext import commands
-from configuration import *
+from configuration import CAPS, DB_USER, DB_PASSWORD, MAIN_CHANNEL_ID, TOKEN
 import logs
 
 MESSAGES, SYMBOLS = 0, 0
 AUTHORS = {}
-CAPS = 0
+
 CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
 
+# command_prefix
 PREFIX = '?'
 
 client = commands.Bot(command_prefix=PREFIX)
 client.remove_command('help')
 
-# command_prefix какие префиксы должны использоваться перед командой
-
-hello_words = ['ky', 'ку']
-answer_words = ['узнать информацию о себе', 'какая информация',
+HELLO_WORDS = ['ky', 'ку']
+ANSWER_WORDS = ['узнать информацию о себе', 'какая информация',
                 'команды', 'команды сервера', 'что здесь делать']
-goodbye_words = ['бб', 'bb', 'лан я пошел']
+GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
 
 
 @client.event
@@ -43,8 +44,8 @@ async def on_ready():
 async def on_command_error(ctx, error):
     await ctx.message.delete()
     if isinstance(error, discord.ext.commands.errors.CommandOnCooldown):
-        await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю '
-                       f'все что смогу для тебя' % error.retry_after)
+        await ctx.send(f'{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю'
+                       f' все что смогу для тебя' % error.retry_after)
     elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
         await ctx.send(f'Команда {ctx.message.content} не была обноружена')
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
@@ -67,29 +68,30 @@ async def on_message(message):
             SYMBOLS += len(msg.replace(' ', ''))
         AUTHORS[message.author.id] = [i + x for i, x in zip([1, temp_symb],
                                                             AUTHORS.get(message.author.id, [0, 0]))]
-    url_check = re.search('^(?:https?:\/\/)?(?:w{3}\.)?', msg)
-    range_check = re.search(
+    url_check = re.search(r'^(?:https?:\/\/)?(?:w{3}\.)?', msg)
+    range_lox_regex = re.search(
         r'[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[0oо]+\s*(?:[hxхз]+|'
         r'(?:}{)+)|(?:]\[)+)[\w\s]*', msg)
     if url_check and message.content != urllib.parse.unquote(message.content):
         await message.delete()
         message.content = urllib.parse.unquote(message.content)
         await message.channel.send(f'<@{message.author.id}>: {message.content}')
-    if range_check:
+    if range_lox_regex:
+        swear_word = range_lox_regex[1]
         await message.delete()
-        await message.channel.send(f'{message.author.name} слышь чорт, сам ты {range_check[1]}')
+        await message.channel.send(f'{message.author.name} слышь чорт, сам ты {swear_word}')
     if any(i.isalpha() for i in msg) and message.content.upper() == message.content and CAPS:
         await message.delete()
         await message.channel.send(f'{message.author.name}: {message.content.capitalize()}')
-    if msg in hello_words:
+    if msg in HELLO_WORDS:
         await message.channel.send('Привет, чо надо, идите нахуй я вас не знаю')
-    elif msg in answer_words:
-        await message.channel.send('напиши help и тебе откроются все тайны')
-    elif msg in goodbye_words:
+    elif msg in ANSWER_WORDS:
+        await message.channel.send(f'напиши {PREFIX}cmds и тебе откроются все тайны')
+    elif msg in GOODBYE_WORDS:
         await message.channel.send('{} пиздуй бороздуй и я попиздил'.format(message.author.name))
 
 
-#data base connection
+# data base connection
 def db():
     conn = psycopg2.connect(dbname='d3lg89is3baabv', user=DB_USER,
                             password=DB_PASSWORD,
@@ -102,8 +104,8 @@ def db():
 async def log():
     await client.wait_until_ready()
     global MESSAGES, SYMBOLS, AUTHORS
-    channel = client.get_channel(698975367326728352)  #test mode
-    #channel = client.get_channel(698975228323168271)    #run mode
+    channel = client.get_channel(698975367326728352)  # test mode
+    # channel = client.get_channel(MAIN_CHANNEL_ID)    #run mode
     while not client.is_closed():
         conn, cur = db()
         if MESSAGES:
@@ -247,51 +249,30 @@ async def unban(ctx, *, member):
         await ctx.send('Пользователь {} не найден в списке забаненых'.format(member))
 
 
-@client.command(pass_context=True)
-async def hello(ctx, arg=None):
-    author = ctx.message.author
-    if arg:
-        await ctx.send(f"Hello {author.name}")
-    else:
-        await ctx.send(f"Hello {author.name} {arg}")
-
-
 # help
 @client.command(pass_context=True)
-async def help(ctx):
-    await ctx.send('**Навигация по командам**')
-    message = f'{PREFIX}clear N'.ljust(20) + '-- удаление N сообщений из чата (по умолчанию 10)\n' + \
-              f'{PREFIX}ban member reason'.ljust(20) +'-- забанить пользователя member ' \
-              f'(@упомянуть) указать причину reason\n' + \
-              f'{PREFIX}unban member'.ljust(20) + '-- разбанить пользователя member' +\
-              f'(указать ник и id -> ник#id)\n' + \
-              f'{PREFIX}kick member'.ljust(20) + '-- кикнуть пользователя member (@упомянуть)\n' + \
-              f'{PREFIX}mute member N'.ljust(20) + '-- замутить пользователя @member '  + \
-              'на N - часов (по умолчанию на час )\n' + \
-              f'{PREFIX}unmute member'.ljust(20) + '-- размутить пользователя member\n' + \
-              f'{PREFIX}caps'.ljust(20) + '-- разрешить/запретить CapsLock \n' + \
-              f'{PREFIX}hello фраза'.ljust(20) + '-- поздоровайтесь с ботом (необязательный аргумент фраза) \n' + \
-              f'{PREFIX}i query'.ljust(20) + '-- искать картинку с названием query \n' + \
-              f'{PREFIX}g query'.ljust(20) + '-- сделать поисковый запрос в google с текстом query \n' + \
-              f'если в конце указать цифру n (небольше 10) выдаст первые n запросов\n' + \
-              f'{PREFIX}cit'.ljust(20) + '-- случайная цитата из списка внесенных \n' + \
-              f'{PREFIX}dob'.ljust(20) + '-- добавить цитату. По умолчанию автор сообщения - автор цитаты. \n' + \
-              'Что-бы укзаать другого автора, добавить в первом слове двоеточие: ' \
-              'Имя_Фамилия: Текст \n' + \
-              f'{PREFIX}stats (доп параметры: day, week, month, max) -- показать статистику пользователя \n' + \
-              f'{PREFIX}stats ch'.ljust(20) + '-- показать статистику канала \n' + \
-              f'{PREFIX}hist дата'.ljust(20) + '-- искать воспоминания за указанную дату (формат даты дд-мм-гггг) \n' + \
-              f'{PREFIX}hist текст'.ljust(20) + '-- добавить записть в воспоминания за сегодняшнее число \n' + \
-              f'{PREFIX}translate Язык текст -- перевести текст на указанный язык'
-    retStr = str(f"```yaml\n{message}```")
-    await ctx.send(retStr)
-    languages_info = discord.Embed(title='Список языков и их сокращения',
-                                   url='https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351'
-                                       'dbc6eef269efa0bc/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json')
+async def cmds(ctx):
+    output = ""
+    await ctx.send('**Список доступных комманд**')
+    try:
+        with open('commands_description.yaml', encoding="utf-8") as file:
+            commands_description = yaml.safe_load(file)["commands_description"]
+    except FileNotFoundError:
+        await ctx.send(r'При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯')
+        return
+    for command_name, description in commands_description.items():
+        output += f"{PREFIX}{command_name}".ljust(20) + f"-- {description} \n"
+    yaml_message_style = str(f"```yaml\n{output}```")
+    await ctx.send(yaml_message_style)
+    languages_info = discord.Embed(
+        title='Список языков и их сокращения',
+        url='https://gist.githubusercontent.com/astronautlevel2/'
+            '93a19379bd52b351dbc6eef269efa0bc/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json')
     await ctx.send(embed=languages_info)
 
+
 # mute
-@client.command()
+@client.command
 @commands.has_permissions(administrator=True)
 async def mute(ctx, member: discord.Member, duration: int = 1):
     mute_role = discord.utils.get(ctx.message.guild.roles, name='mute')

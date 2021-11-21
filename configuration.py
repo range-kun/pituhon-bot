@@ -1,13 +1,17 @@
 import os
 
+CAPS = 0
+MAIN_CHANNEL_ID = 873248515042738176
+
 try:
-    with open('config.txt', 'r') as myfile:
-        TOKEN = myfile.readline().strip()
-        API_KEY = myfile.readline().strip()
-        SEARCH_ENGINE_ID = myfile.readline().strip()
-        DB_USER = myfile.readline().strip()
-        DB_PASSWORD = myfile.readline().strip()
-except:
+    with open('config.txt', 'r') as my_file:
+        TOKEN = my_file.readline().strip()
+        API_KEY = my_file.readline().strip()
+        SEARCH_ENGINE_ID = my_file.readline().strip()
+        DB_USER = my_file.readline().strip()
+        DB_PASSWORD = my_file.readline().strip()
+        
+except FileNotFoundError:
     TOKEN = os.environ.get('BOT_TOKEN')
     API_KEY = os.environ.get('API_KEY')
     SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
