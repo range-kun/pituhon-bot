@@ -10,6 +10,8 @@ try:
         SEARCH_ENGINE_ID = my_file.readline().strip()
         DB_USER = my_file.readline().strip()
         DB_PASSWORD = my_file.readline().strip()
+        DB_NAME = "d3lg89is3baabv"
+        DB_HOST = "ec2-52-211-144-45.eu-west-1.compute.amazonaws.com"
         
 except FileNotFoundError:
     TOKEN = os.environ.get('BOT_TOKEN')

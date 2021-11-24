@@ -8,12 +8,14 @@ import urllib.parse
 import psycopg2
 import discord
 import yaml
+import sqlalchemy as sa
 from discord.ext import commands
 
+from configuration import CAPS, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
+from data.phrase import PhraseData
 import google_search
-import translate
-from configuration import CAPS, DB_USER, DB_PASSWORD, MAIN_CHANNEL_ID, TOKEN
 import logs
+import translate
 
 MESSAGES, SYMBOLS = 0, 0
 AUTHORS = {}
@@ -93,9 +95,10 @@ async def on_message(message):
 
 # data base connection
 def db():
-    conn = psycopg2.connect(dbname='d3lg89is3baabv', user=DB_USER,
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER,
                             password=DB_PASSWORD,
-                            host='ec2-52-211-144-45.eu-west-1.compute.amazonaws.com', port='5432')
+                            host=DB_HOST, port='5432'
+                            )
     cur = conn.cursor()
     return conn, cur
 
@@ -150,16 +153,14 @@ async def stats(ctx, *, text=None):
     return
 
 
+# get random phrase
 @client.command(pass_context=True)
 async def cit(ctx):
-    conn, cur = db()
-    cur.execute("SELECT AUTHOR, FRAZA  from phraces")
-    with conn:
-        rows = [' '.join(i) for i in cur.fetchall()]
-    await ctx.send(random.choice(rows))
+    random_phrase = PhraseData.get_random_phrase()
+    await ctx.send(random_phrase)
 
 
-# add pharace
+# add phrase
 @client.command(pass_context=True)
 async def dob(ctx, *text):
     if text[0].endswith(':'):
@@ -168,15 +169,15 @@ async def dob(ctx, *text):
     else:
         author = ctx.author.name
     text = ' '.join(text)
-    conn, cursor = db()
-    with conn:
-        cursor.execute(f"INSERT INTO PHRACES (AUTHOR,FRAZA) \
-                        VALUES ('{author}:','{text}')")
-        conn.commit()
-        await ctx.send('Была добавлена фраза: '+author+': '+text)
+
+    PhraseData.insert(
+        author=author,
+        text=text
+    )
+    await ctx.send('Была добавлена фраза: '+author+': '+text)
 
 
-# add hitory log
+# add history log
 @client.command(pass_context=True)
 async def hist(ctx, *, text):
     conn, cur = db()
