@@ -19,7 +19,7 @@ class PhraseData(Data):
     @classmethod
     def get_random_phrase(cls):
         try:
-            result = cls.get_data("author", "text", limit=1, order=sa.func.random()).fetchone()
+            phrase = cls.get_data("author", "text", limit=1, order=sa.func.random()).fetchone()
         except Exception:
             return 'Извините не удалось получить фразу'
-        return " ".join(result)
+        return phrase

@@ -34,7 +34,7 @@ class Data:
             )
 
     @classmethod
-    def get_data(cls, *fields, condition=None, limit=None, offset=None, order=None):
+    def get_data(cls, *fields, condition=None, limit: int = None, offset: int = None, order=None):
         cls.get_table()
         fields = [cls.table.c[field] for field in fields]
         query = sa.select(*fields)

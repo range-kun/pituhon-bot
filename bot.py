@@ -156,8 +156,8 @@ async def stats(ctx, *, text=None):
 # get random phrase
 @client.command(pass_context=True)
 async def cit(ctx):
-    random_phrase = PhraseData.get_random_phrase()
-    await ctx.send(random_phrase)
+    author, text = PhraseData.get_random_phrase()
+    await ctx.send(f"{author}: {text}")
 
 
 # add phrase
