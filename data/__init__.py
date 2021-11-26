@@ -1,6 +1,7 @@
 from typing import Optional
 
 import sqlalchemy as sa
+from sqlalchemy.engine.cursor import LegacyCursorResult
 
 from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
@@ -10,10 +11,11 @@ class Data:
     db: Optional[sa.engine.Engine] = None
 
     @classmethod
-    def get_table(cls):
+    def get_table(cls) -> sa.Table:
         if not cls.db:
             cls.connect_to_db()
-            cls.create_table()
+            cls.table = cls.create_table()
+        return cls.table
 
     @classmethod
     def create_table(cls):
@@ -34,12 +36,10 @@ class Data:
             )
 
     @classmethod
-    def get_data(cls, *fields, condition=None, limit: int = None, offset: int = None, order=None):
-        cls.get_table()
-        fields = [cls.table.c[field] for field in fields]
+    def get_data(cls, *fields, condition=None, limit: int = None, offset: int = None, order=None) -> LegacyCursorResult:
+        fields = [cls.get_table().c[field] for field in fields]
         query = sa.select(*fields)
-
-        if condition:
+        if condition is not None:
             query = query.where(condition)
         if order is not None:
             query = query.order_by(order)

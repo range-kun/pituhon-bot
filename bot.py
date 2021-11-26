@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import random
 import re
 import time
 import urllib.parse
@@ -8,11 +7,11 @@ import urllib.parse
 import psycopg2
 import discord
 import yaml
-import sqlalchemy as sa
 from discord.ext import commands
 
 from configuration import CAPS, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
 from data.phrase import PhraseData
+from data.history_record import HistoryRecord
 import google_search
 import logs
 import translate
@@ -51,7 +50,8 @@ async def on_command_error(ctx, error):
     elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
         await ctx.send(f'Команда {ctx.message.content} не была обноружена')
     elif isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
-        await ctx.send(f'Команде {ctx.message.content} не хватает аргументов')
+        await ctx.send(f'Команде {ctx.message.content} не хватает аргументов, '
+                       f'наберите ?cmds для подсказки')
     raise error  # re-raise the error so all the errors will still show up in console
 
 
@@ -104,7 +104,7 @@ def db():
 
 
 # log data
-async def log():
+async def collect_stats():
     await client.wait_until_ready()
     global MESSAGES, SYMBOLS, AUTHORS
     channel = client.get_channel(698975367326728352)  # test mode
@@ -174,30 +174,30 @@ async def dob(ctx, *text):
         author=author,
         text=text
     )
-    await ctx.send('Была добавлена фраза: '+author+': '+text)
+    await ctx.send('Было добавлено фраза: '+author+': '+text)
 
 
 # add history log
 @client.command(pass_context=True)
-async def hist(ctx, *, text):
-    conn, cur = db()
-    date_check = re.match(r'(\d{2}-\d{2}-\d{4})', text)
-    if date_check:
-        date = '-'.join(date_check[1].split('-')[::-1])
-        cur.execute(f"SELECT log from history_logs where date='{date}'")
-        history_log = cur.fetchall()
-        if history_log:
-            await ctx.send(f'Воспоминания за {date_check[1]}:')
-            for log in history_log:
-                await ctx.send(f'{log[0]}')
-        else:
-            await ctx.send('На указанную дату логов не найдено')
-    else:
-        cur.execute(f"INSERT INTO history_logs (date, log) values ('{logs.today()}', '{text.capitalize()}')")
-        await ctx.send(f'{logs.today().strftime("%d-%m-%Y")} - была добавлена фраза: {text}')
-        conn.commit()
+async def hist(ctx, *, text: str):
+    HistoryRecord.insert(date=logs.today(), log=text.capitalize())
+    await ctx.send(f'{logs.today().strftime("%d-%m-%Y")} - было добавлено воспоминание: {text}')
 
 
+@client.command(pass_context=True)
+async def rec(ctx, text, *, num=None):
+    result = HistoryRecord.get_record(text, offset=num)
+    if type(result) == str:
+        await ctx.send(result)
+        return
+    output = ""
+    for date, record in result:
+        date_for_output = date.strftime("%d-%m-%Y")
+        output += f"{date_for_output}: {record}\n"
+    await ctx.send(output)
+
+
+# forbid to use CAPSLOCK
 @client.command(pass_context=True)
 async def caps(ctx):
     global CAPS
@@ -307,5 +307,5 @@ async def unmute(ctx, member: discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 # connect
-client.loop.create_task(log())
+client.loop.create_task(collect_stats())
 client.run(TOKEN)
