@@ -53,7 +53,7 @@ class HistoryRecord(Data):
 
         if offset:
             if offset.isdigit():
-                offset = int(offset) + 1
+                offset = max(0, int(offset) - 1)
                 limit = MAX_HIST_RETRIEVE_RECORDS
             else:
                 return "Пожалуйста укажите номер записи в числовом виде: -> rec 2021 5"
