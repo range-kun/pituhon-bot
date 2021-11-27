@@ -25,7 +25,8 @@ async def trans(ctx, to_language, *, msg):
 
     async with aiohttp.ClientSession() as session:
         resp = await session.get(
-            "https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351dbc6eef269efa0bc/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json"
+            "https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351dbc6eef269efa0bc"
+            "/raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json"
         )
         lang_codes = await resp.json(content_type='text/plain')
     real_language = False

@@ -34,6 +34,7 @@ class HistoryRecord(Data):
         if len(date) == 3:  # full date
             date = '-'.join(str(i) for i in date)
             return cls.get_table().c.date == date
+
         date_field = cls.get_table().c["date"]
         if len(date) == 2:  # year and month
             year, month = date

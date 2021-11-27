@@ -9,10 +9,10 @@ import discord
 import yaml
 from discord.ext import commands
 
-from configuration import CAPS, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
+from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
 from data.phrase import PhraseData
 from data.history_record import HistoryRecord
-import google_search
+from cogs.google_search import Google
 import logs
 import translate
 
@@ -35,8 +35,7 @@ GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
 
 @client.event
 async def on_ready():
-    client.add_command(google_search.i)
-    client.add_command(google_search.g)
+    client.add_cog(Google(client))
     client.add_command(translate.trans)
     print('Bot connected')
 
