@@ -13,8 +13,9 @@ from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
 from data.phrase import PhraseData
 from data.history_record import HistoryRecord
 from cogs.google_search import Google
+from cogs.translate import Translate
 import logs
-import translate
+
 
 MESSAGES, SYMBOLS = 0, 0
 AUTHORS = {}
@@ -36,7 +37,7 @@ GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
 @client.event
 async def on_ready():
     client.add_cog(Google(client))
-    client.add_command(translate.trans)
+    client.add_cog(Translate(client))
     print('Bot connected')
 
 
