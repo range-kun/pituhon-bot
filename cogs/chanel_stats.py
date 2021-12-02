@@ -25,3 +25,4 @@ class ChanelStats(commands.Cog):
         for k, v in info_dict.items():
             emb.add_field(name=k, value=v, inline=False)
         await channel.send(embed=emb)
+

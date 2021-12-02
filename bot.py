@@ -9,7 +9,7 @@ import discord
 import yaml
 from discord.ext import commands
 
-from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
+from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN, PYTHON_BOT_ID
 from data.phrase import PhraseData
 from data.history_record import HistoryRecord
 from cogs.google_search import Google
@@ -60,9 +60,10 @@ async def on_message(message):
     await client.process_commands(message)
     msg = message.content.lower()
     global AUTHORS, MESSAGES, SYMBOLS
-    if message.author.id != 698973448772386927:
+    if message.author.id != PYTHON_BOT_ID:
         MESSAGES += 1
-        if re.search(r'<:\w+:\d+>', msg):
+        sticker_regex = re.compile(r'<:\w+:\d+>')
+        if sticker_regex.search(msg):
             temp_symb = 1
             SYMBOLS += 1
         else:
