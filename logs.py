@@ -6,6 +6,7 @@ import discord
 def yesterday():
     return datetime.date(datetime.now() - timedelta(days=1))
 
+
 def today():
     return datetime.date(datetime.now())
 
@@ -17,7 +18,7 @@ async def send_data_for_day(channel, authors, messages, symbols, client):
                                 key=lambda i: i[1][0], reverse=True)[0]
     temp_list_symbols = sorted(list(authors.items()),
                                key=lambda i: i[1][1], reverse=True)[0]
-    author_m, author_s = [i.name for i in
+    author_m, author_s = [user.name for user in
                           map(client.get_user, [temp_list_messages[0], temp_list_symbols[0]])]
     channel_info = f'Кол-во сообщений  =>{messages}\n' \
                    f'Кол-во символов  =>{symbols}'
@@ -133,7 +134,6 @@ def update_stats_max_month(cur):
                     f"SYMBOLS={new_symb} where period='month'")
 
 
-
 ####max stats####
 def update_author_max_stats(cur, table, id_num, values):
     cur.execute(f'SELECT MESSAGES, SYMBOLS FROM {table} WHERE author_id={id_num}')
@@ -234,7 +234,7 @@ async def author_data_for_period(ctx, cur, authors, *period):
 
 def channel_data(cur):
     info_dict = {
-                'Максимальные значения за день':'='*25,
+                'Максимальные значения за день': '='*25,
                  lambda: send_channel_peak(cur, 'day'): '='*25,
                 'Максимальные значения за месяц': '=' * 25,
                  lambda: send_channel_peak(cur, 'month', "%m-%Y"): '=' * 25,

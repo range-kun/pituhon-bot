@@ -8,16 +8,6 @@ import langid
 from configuration import DEFAULT_TRANSLATE_LANGUAGE
 
 
-headers_Get = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-    }
-
-
 class Translate(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -58,7 +48,8 @@ class Translate(commands.Cog):
     async def trans(self, ctx, *, msg: str):
         """Translates words from one language to another. Do [p]cmds for more information.
         Usage:
-        [p]trans [lang::] <words> - Translate words from one language to another. Short language name must be used.
+        [p]trans [lang::] <words> - Translate words from one language to another.
+        Short language name must be used.
         The original language will be assumed automatically.
         """
         to_language = None
