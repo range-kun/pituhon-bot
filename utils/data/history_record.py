@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import extract
 
 from configuration import MAX_HIST_RETRIEVE_RECORDS
-from data import Data
+from utils.data import Data
 
 
 class HistoryRecord(Data):

@@ -10,8 +10,8 @@ import yaml
 from discord.ext import commands
 
 from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN, PYTHON_BOT_ID
-from data.phrase import PhraseData
-from data.history_record import HistoryRecord
+from utils.data.phrase import PhraseData
+from utils.data.history_record import HistoryRecord
 from cogs.google_search import Google
 from cogs.translate import Translate
 import logs

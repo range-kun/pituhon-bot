@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from data import Data
+from utils.data import Data
 
 
 class PhraseData(Data):
