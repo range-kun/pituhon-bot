@@ -69,7 +69,7 @@ class HistoryRecord(Data):
                                   )
         except Exception as e:
             print(e)
-            return "Извините произошла ошибка при попоытке достать фразу"
+            return "Извините произошла ошибка при попытке достать фразу"
 
         result = result.fetchall()
         if (query_len := len(result)) > MAX_HIST_RETRIEVE_RECORDS:

@@ -4,10 +4,11 @@ import json
 import random
 import re
 import urllib.parse
+from datetime import datetime
 
 import aiohttp
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from configuration import API_KEY, MAIN_CHANNEL_ID, SEARCH_ENGINE_ID
 
@@ -30,8 +31,7 @@ class Google(commands.Cog):
     async def i(self, ctx, *, message):     # get random photo from google
         await ctx.message.delete()
         if ctx.channel.id == MAIN_CHANNEL_ID:
-            is_restricted_query = self.check_restricted_content(message)
-            if is_restricted_query:
+            if self.check_restricted_content(message):
                 return await ctx.send('На терретории данного канала в соответсвии со Ст. 6.21 КоАП РФ.'
                                       'пропоганда баб с письками запрещена. Но вы всегда можете '
                                       'почертить в автокаде, например.')

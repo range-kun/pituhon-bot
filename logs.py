@@ -2,39 +2,14 @@ import time
 from datetime import datetime, timedelta
 import discord
 
-
-def yesterday():
-    return datetime.date(datetime.now() - timedelta(days=1))
-
-
-def today():
-    return datetime.date(datetime.now())
+from utils.message_stats import MessageCounter as MC
 
 
 #######STATS for day############
-async def send_data_for_day(channel, authors, messages, symbols, client):
-    emb = discord.Embed(title='Информация по серверу за 24 часа', colour=discord.Color.dark_blue())
-    temp_list_messages = sorted(list(authors.items()),
-                                key=lambda i: i[1][0], reverse=True)[0]
-    temp_list_symbols = sorted(list(authors.items()),
-                               key=lambda i: i[1][1], reverse=True)[0]
-    author_m, author_s = [user.name for user in
-                          map(client.get_user, [temp_list_messages[0], temp_list_symbols[0]])]
-    channel_info = f'Кол-во сообщений  =>{messages}\n' \
-                   f'Кол-во символов  =>{symbols}'
-    message_info = f'Чемпион по сообщениям => {author_m}\n' \
-                   f'Количество=>{temp_list_messages[1][0]}'
-    symbol_info = f'Чемпион по символам =>{author_s} \n' \
-                  f'Количество => {temp_list_symbols[1][1]}'
-    info_dict = {'Всего за день': '='*25, channel_info: '='*25,
-                 message_info: '='*25, symbol_info: '='*25}
-    for k, v in info_dict.items():
-        emb.add_field(name=k, value=v, inline=False)
-    await channel.send(embed=emb)
 
 
-def update_stats_author_day(conn, cur, authors, messages, symbols):
-    for i, v in authors.items():
+def update_stats_author_day(conn, cur):
+    for i, v in MC.authors.items():
         cur.execute(f'SELECT MESSAGES, SYMBOLS FROM LOGS WHERE ID={i}')
         row = cur.fetchone()
         update_dict = {'LOGS': 'ID', 'logs_for_week': 'author_id', 'logs_for_month': 'author_id'}
@@ -57,54 +32,18 @@ def update_stats_author_day(conn, cur, authors, messages, symbols):
                                 WHERE {id_num}={i}")
         conn.commit()
         update_author_max_stats(cur, 'top_messages_day', i, v)
-        update_stats_max_day(cur, messages, symbols)
 
 
-def update_stats_max_day(cur, messages, symbols):
-    cur.execute("SELECT MESSAGES, SYMBOLS FROM ACTIVITY where period='day'")
-    temp_mes, temp_symb = cur.fetchone()
-    if messages > temp_mes:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_MESSAGES='{yesterday()}', MESSAGES={messages} where period='day'")
-    elif symbols > temp_symb:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_SYMBOLS='{yesterday()}', SYMBOLS={symbols}  where period='day'")
 
 
 #######SCHEDULE STATS############
-async def send_data_schedule(cur, channel, client):
-    send_data_list = {'logs_for_month': [time.localtime()[2] == 1,
-                                         'Ежемесячная информация', 'месяц'],
-                      'logs_for_week': [datetime.today().isoweekday() == 1,
-                                        'Еженедельная информация', 'неделю']}
-    for key, value in send_data_list.items():
-        if value[0]:
-            cur.execute(f"SELECT SUM(messages), SUM(symbols) from {key}")
-            messages_for_period, symbols_for_period = cur.fetchone()
-            if messages_for_period:
-                emb = discord.Embed(title=value[1], colour=discord.Color.dark_blue())
-                cur.execute(f"SELECT author_id, messages from {key} order by messages DESC")
-                author_top_m, top_messages = cur.fetchone()
-                cur.execute(f"SELECT author_id, symbols from {key} order by symbols DESC")
-                author_top_s, top_symbols = cur.fetchone()
-                author_top_m, author_top_s = [i.name for i in
-                                              map(client.get_user, [author_top_m, author_top_s])]
-                channel_info = f'Кол-во сообщений  =>{messages_for_period}\n' \
-                               f'Кол-во символов  =>{symbols_for_period}'
-                message_info = f'Чемпион по сообщениям => {author_top_m}\n' \
-                               f'Количество=>{top_messages}'
-                symbol_info = f'Чемпион по символам =>{author_top_s} \n' \
-                              f'Количество => {top_symbols}'
-                info_dict = {f'Всего за {value[2]}': '=' * 25, channel_info: '=' * 25,
-                             message_info: '=' * 25, symbol_info: '=' * 25}
-                for k, v in info_dict.items():
-                    emb.add_field(name=k, value=v, inline=False)
-                await channel.send(embed=emb)
 
-
+@classmethod
 def update_stats_schedule(cur):
-    update_stats_max_month(cur)
     cur.execute(f'SELECT ID FROM LOGS')
     row = (i[0] for i in cur.fetchall())
-    update_data_list = {'top_messages_month': [time.localtime()[2] == 1, 'logs_for_month']}
+    is_first_day_of_the_month = time.localtime()[2] == 1
+    update_data_list = {'top_messages_month': [is_first_day_of_the_month, 'logs_for_month']}
     for key, value in update_data_list.items():
         if value[0]:
             for i in row:
@@ -121,17 +60,6 @@ def update_stats_schedule(cur):
                 cur.execute(f"UPDATE {table} SET messages=0, symbols=0 where author_id={i[0]}")
 
 
-def update_stats_max_month(cur):
-    cur.execute("SELECT MESSAGES, SYMBOLS FROM ACTIVITY where period='month'")
-    old_mes, old_symb = cur.fetchone()
-    cur.execute('SELECT SUM(MESSAGES), SUM(SYMBOLS) FROM logs_for_month')
-    new_mes, new_symb = cur.fetchone()
-    if new_mes > old_mes:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_MESSAGES='{yesterday()}',"
-                    f" MESSAGES={new_mes} where period='month'")
-    elif new_symb > old_symb:
-        cur.execute(f"UPDATE activity SET DATE_PEAK_SYMBOLS='{yesterday()}', "
-                    f"SYMBOLS={new_symb} where period='month'")
 
 
 ####max stats####
@@ -235,9 +163,9 @@ async def author_data_for_period(ctx, cur, authors, *period):
 def channel_data(cur):
     info_dict = {
                 'Максимальные значения за день': '='*25,
-                 lambda: send_channel_peak(cur, 'day'): '='*25,
+                lambda: send_channel_peak(cur, 'day'): '='*25,
                 'Максимальные значения за месяц': '=' * 25,
-                 lambda: send_channel_peak(cur, 'month', "%m-%Y"): '=' * 25,
+                lambda: send_channel_peak(cur, 'month', "%m-%Y"): '=' * 25,
                  }
 
     return info_dict
@@ -248,7 +176,9 @@ async def final_stats(info, ctx, func, *args):
         info_dict = func(*args)
     else:
         info_dict = func(ctx, *args)
-    for k, v in {k: v for k, v in info_dict.items() if v}.items():
+    for k, v in info_dict.items():
+        if not v:
+            continue
         if hasattr(k, '__call__'):
             k = k()
         if hasattr(v, '__call__'):
