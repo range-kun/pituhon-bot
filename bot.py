@@ -284,15 +284,12 @@ schedule.every().day.at("02:00").do(ChanelStats.daily_routine)
 schedule.every().monday.at("02:05").do(ChanelStats.weekly_routine)
 schedule.every().day.at("02:10").do(ChanelStats.monthly_routine)
 schedule.every().day.at("02:15").do(MC.set_stats_to_zero)
-schedule.every().day.at("02:15").do(MC.set_stats_to_zero)
 
 
 async def my_scheduele():
-    await bot.wait_until_ready()
     while True:
         await schedule.run_pending()
-        await asyncio.sleep(25)
+        await asyncio.sleep(5)
 
 
 bot.run(TOKEN)
-

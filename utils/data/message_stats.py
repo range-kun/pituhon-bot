@@ -74,8 +74,8 @@ class StatsForCurrentPeriod(Data):
                 session.query(user_id_field, symbol_field).order_by(sa.desc(symbol_field)).limit(1)
 
         return [channel_info.first(),
-                user_with_most_messages_info.all(),
-                user_with_most_symbols_info.all()
+                user_with_most_messages_info.all()[0],
+                user_with_most_symbols_info.all()[0]
                 ]
 
 

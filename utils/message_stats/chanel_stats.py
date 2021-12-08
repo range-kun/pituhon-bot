@@ -51,6 +51,7 @@ class ChanelStats(Statistic):
     @classmethod
     async def weekly_routine(cls):
         messages_info, symbols_info = cls.collect_stats_for_week()
+
         cls.update_max_stats_for_month()
         await cls.send_message_stats_for_month(messages_info, symbols_info)
 
@@ -67,7 +68,7 @@ class ChanelStats(Statistic):
             channel_info=(cls.messages_for_month, cls.symbols_for_month),
             messages_info=messages_info,
             symbols_info=symbols_info,
-            period_info=("месяц", "Ежемесячная информация"),
+            period_info=("Неделя", "Еженедельная информация"),
         )
 
         await cls.channel().send(embed=output)
