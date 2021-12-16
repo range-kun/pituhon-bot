@@ -9,13 +9,14 @@ import psycopg2
 import aioschedule as schedule
 import yaml
 
-from configuration import CAPS, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
+from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
 from utils.data.phrase import PhraseData
 from utils.data.history_record import HistoryRecord
 from cogs.google_search import Google
 from cogs.translate import Translate
 from utils import today
 from utils.message_stats import MessageCounter as MC
+from utils.message_stats.user_stats import UserStats
 from utils.message_stats.chanel_stats import ChanelStats
 import logs
 
@@ -23,6 +24,7 @@ import logs
 CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
 
 # command_prefix
+CAPS = 0
 PREFIX = '?'
 
 bot = commands.Bot(command_prefix=PREFIX)
@@ -32,15 +34,6 @@ HELLO_WORDS = ['ky', 'ку']
 ANSWER_WORDS = ['узнать информацию о себе', 'какая информация',
                 'команды', 'команды сервера', 'что здесь делать']
 GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
-
-
-@bot.event
-async def on_ready():
-    ChanelStats.set_bot(bot)
-    bot.loop.create_task(my_scheduele())
-    bot.add_cog(Google(bot))
-    bot.add_cog(Translate(bot))
-    print('Bot connected')
 
 
 @bot.event
@@ -280,16 +273,29 @@ async def unmute(ctx, member: discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
-schedule.every().day.at("02:00").do(ChanelStats.daily_routine)
-schedule.every().monday.at("02:05").do(ChanelStats.weekly_routine)
-schedule.every().day.at("02:10").do(ChanelStats.monthly_routine)
-schedule.every().day.at("02:15").do(MC.set_stats_to_zero)
+schedule.every().day.at("23:40").do(UserStats.daily_routine)
+schedule.every().thursday.at("23:16").do(UserStats.weekly_routine)
+schedule.every().day.at("23:44").do(UserStats.monthly_routine)
+
+schedule.every().day.at("23:50").do(ChanelStats.daily_routine)
+schedule.every().monday.at("23:52").do(ChanelStats.weekly_routine)
+schedule.every().day.at("23:54").do(ChanelStats.monthly_routine)
+
+schedule.every().day.at("23:56").do(MC.set_stats_to_zero)
 
 
-async def my_scheduele():
+async def my_schedule():
     while True:
         await schedule.run_pending()
         await asyncio.sleep(5)
 
+
+@bot.event
+async def on_ready():
+    ChanelStats.set_bot(bot)
+    bot.loop.create_task(my_schedule())
+    bot.add_cog(Google(bot))
+    bot.add_cog(Translate(bot))
+    print('Bot connected')
 
 bot.run(TOKEN)

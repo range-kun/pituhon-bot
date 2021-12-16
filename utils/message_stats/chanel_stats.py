@@ -1,12 +1,9 @@
-from datetime import datetime
-
 import discord
 
 from configuration import TEST_CHANNEL_ID
-from utils.data.message_stats import MaxServerSymbolsForPeriod, MaxServerMessagesForPeriod, \
-    UserStatsForCurrentWeek, UserStatsForCurrentMonth
-from utils.message_stats import Statistic
-from utils.message_stats import MessageCounter as MC
+from utils import is_last_month_day
+from utils.data.message_stats import MaxServerSymbolsForPeriod, MaxServerMessagesForPeriod
+from utils.message_stats import Statistic, MessageCounter as MC
 
 
 class ChanelStats(Statistic):
@@ -18,8 +15,24 @@ class ChanelStats(Statistic):
     @classmethod
     async def daily_routine(cls):
         messages_info, symbols_info = cls.collect_stats_for_day()
+        if not messages_info:
+            return
         cls.update_max_stats_for_day()
         await cls.send_message_stats_for_day(messages_info, symbols_info)
+
+    @classmethod
+    async def weekly_routine(cls):
+        messages_info, symbols_info = cls.collect_stats_for_week()
+
+        cls.update_max_stats_for_week()
+        await cls.send_message_stats_for_month(messages_info, symbols_info)
+
+    @classmethod
+    async def monthly_routine(cls):
+        if is_last_month_day():
+            messages_info, symbols_info = cls.collect_stats_for_month()
+            cls.update_max_stats_for_month()
+            await cls.send_message_stats_for_month(messages_info, symbols_info)
 
     @classmethod
     def update_max_stats_for_day(cls):
@@ -27,14 +40,8 @@ class ChanelStats(Statistic):
 
     @classmethod
     def collect_stats_for_day(cls):
-        user_id_with_most_messages = max(MC.authors, key=lambda user: MC.authors[user].amount_of_messages)
-        user_with_most_messages = MC.authors[user_id_with_most_messages].amount_of_messages
-
-        user_id_with_most_symbols = max(MC.authors, key=lambda user: MC.authors[user].amount_of_symbols)
-        user_with_most_symbols = MC.authors[user_id_with_most_symbols].amount_of_symbols
-        return [(user_id_with_most_messages, user_with_most_messages),
-                (user_id_with_most_symbols, user_with_most_symbols)
-                ]
+        messages_info, symbols_info = MC.get_server_stats_for_day()
+        return messages_info, symbols_info
 
     @classmethod
     async def send_message_stats_for_day(cls, messages_info, symbols_info):
@@ -49,15 +56,8 @@ class ChanelStats(Statistic):
         await cls.channel().send(embed=output)
 
     @classmethod
-    async def weekly_routine(cls):
-        messages_info, symbols_info = cls.collect_stats_for_week()
-
-        cls.update_max_stats_for_month()
-        await cls.send_message_stats_for_month(messages_info, symbols_info)
-
-    @classmethod
     def collect_stats_for_week(cls) -> tuple:
-        channel_info, messages_info, symbols_info = UserStatsForCurrentWeek.get_stats_for_period()
+        channel_info, messages_info, symbols_info = MC.get_server_stats_for_week()
         cls.messages_for_week, cls.symbols_for_week = channel_info
         return messages_info, symbols_info
 
@@ -78,16 +78,8 @@ class ChanelStats(Statistic):
         cls.update_max_stats("week", cls.messages_for_week, cls.symbols_for_week)
 
     @classmethod
-    async def monthly_routine(cls):
-        day_of_month = datetime.now().day
-        if day_of_month == 1:
-            messages_info, symbols_info = cls.collect_stats_for_month()
-            cls.update_max_stats_for_month()
-            await cls.send_message_stats_for_month(messages_info, symbols_info)
-
-    @classmethod
     def collect_stats_for_month(cls) -> tuple:
-        channel_info, messages_info, symbols_info = UserStatsForCurrentMonth.get_stats_for_period()
+        channel_info, messages_info, symbols_info = MC.get_server_stats_for_month()
         cls.messages_for_month, cls.symbols_for_month = channel_info
         return messages_info, symbols_info
 
@@ -137,6 +129,7 @@ class ChanelStats(Statistic):
 
         user_name_with_most_messages = await cls.bot.fetch_user(user_with_most_messages)
         user_name_with_most_messages = user_name_with_most_messages.name
+
         user_name_with_most_symbols = await cls.bot.fetch_user(user_with_most_symbols)
         user_name_with_most_symbols = user_name_with_most_symbols.name
 
@@ -157,6 +150,3 @@ class ChanelStats(Statistic):
         for k, v in info_dict.items():
             emb.add_field(name=k, value=v, inline=False)
         return emb
-
-
-

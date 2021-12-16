@@ -26,7 +26,7 @@ class Data:
     @classmethod
     def connect_to_db(cls):
         cls.db = sa.create_engine(
-            url=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}'
+            url=f'postgresql://{DB_USER or "sbnlrgafngcjrs"}:{DB_PASSWORD or "3b1c30299afc68f1ad559f91cee60bf943d8730c5b19bcec3a0add4d88567c8d"}@{DB_HOST}:5432/{DB_NAME}'
         )
 
     @classmethod
@@ -41,20 +41,18 @@ class Data:
         return cls.db
 
     @classmethod
-    def insert(cls, **data):
+    def insert(cls, *, connection=None, **data,):
         cls.get_table()
-        with cls.db.begin() as connect:
-            connect.execute(
-                cls.table.insert(values=data)
-            )
+        cls.execute(statement=lambda: cls.table.insert(values=data), connection=connection)
 
     @classmethod
-    def update(cls, condition, **data):
+    def update(cls, *, connection=None, condition, **data):
         cls.get_table()
-        with cls.db.begin() as connect:
-            connect.execute(
-                sa.update(cls.table).where(condition).values(**data)
-            )
+        cls.execute(statement=lambda: sa.update(cls.table).where(condition).values(**data), connection=connection)
+
+    @classmethod
+    def begin(cls):
+        return cls.get_engine().begin()
 
     @classmethod
     @contextmanager
@@ -66,12 +64,13 @@ class Data:
         session.commit()
 
     @classmethod
-    def execute_with_session(cls, session, statement):
-        result = session.execute(statement)
-        return result
-
-    @classmethod
-    def get_data(cls, *fields, condition=None, limit: int = None, offset: int = None, order=None,) -> LegacyCursorResult:
+    def get_data(cls,
+                 *fields,
+                 condition=None,
+                 limit: int = None,
+                 offset: int = None,
+                 order=None,
+                 connection=None) -> LegacyCursorResult:
         fields = [cls.get_table().c[field] for field in fields]
         query = sa.select(*fields)
 
@@ -84,9 +83,20 @@ class Data:
         if offset:
             query = query.offset(offset)
 
-        with cls.db.begin() as connect:
-            result = connect.execute(
-                query
+        result = cls.execute(statement=lambda: query, connection=connection)
+
+        return result
+
+    @classmethod
+    def execute(cls, *, statement, connection=None):
+        if connection is not None:
+            result = connection.execute(
+                statement()
             )
+        else:
+            with cls.db.begin() as connect:
+                result = connect.execute(
+                    statement()
+                )
 
         return result
