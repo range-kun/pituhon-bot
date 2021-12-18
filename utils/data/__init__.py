@@ -26,7 +26,7 @@ class Data:
     @classmethod
     def connect_to_db(cls):
         cls.db = sa.create_engine(
-            url=f'postgresql://{DB_USER or "sbnlrgafngcjrs"}:{DB_PASSWORD or "3b1c30299afc68f1ad559f91cee60bf943d8730c5b19bcec3a0add4d88567c8d"}@{DB_HOST}:5432/{DB_NAME}'
+            url=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}'
         )
 
     @classmethod
