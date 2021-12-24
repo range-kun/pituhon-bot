@@ -4,11 +4,10 @@ import json
 import random
 import re
 import urllib.parse
-from datetime import datetime
 
 import aiohttp
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from configuration import API_KEY, MAIN_CHANNEL_ID, SEARCH_ENGINE_ID
 

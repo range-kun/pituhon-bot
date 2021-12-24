@@ -5,27 +5,23 @@ import urllib.parse
 
 import discord
 from discord.ext import commands
-import psycopg2
 import aioschedule as schedule
 import yaml
 
-from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, TOKEN
+from configuration import TOKEN
 from utils.data.phrase import PhraseData
 from utils.data.history_record import HistoryRecord
+from cogs.message_stats import MessageStats
 from cogs.google_search import Google
 from cogs.translate import Translate
 from utils import today
-from utils.message_stats import MessageCounter as MC
-from utils.message_stats.user_stats import UserStats
-from utils.message_stats.chanel_stats import ChanelStats
-import logs
+from utils.message_stats_routine import MessageDayCounter as MDC
+from utils.message_stats_routine.user_stats_routine import UserStats
+from utils.message_stats_routine.chanel_stats_routine import ChanelStats
 
-
-CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
-
-# command_prefix
 CAPS = 0
-PREFIX = '?'
+CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
+PREFIX = '?'  # command_prefix
 
 bot = commands.Bot(command_prefix=PREFIX)
 bot.remove_command('help')
@@ -53,7 +49,7 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_message(message):
     await bot.process_commands(message)
-    MC.proceed_message_info(message)
+    MDC.proceed_message_info(message)
     msg_text = message.content.lower()
 
     url_check = re.search(r'^(?:https?:\/\/)?(?:w{3}\.)?', msg_text)
@@ -79,44 +75,6 @@ async def on_message(message):
         await message.channel.send(f'напиши {PREFIX}cmds и тебе откроются все тайны')
     elif msg_text in GOODBYE_WORDS:
         await message.channel.send('{} пиздуй бороздуй и я попиздил'.format(message.author.name))
-
-
-# data base connection
-def db():
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER,
-                            password=DB_PASSWORD,
-                            host=DB_HOST, port='5432'
-                            )
-    cur = conn.cursor()
-    return conn, cur
-
-
-@bot.command(pass_context=True)
-async def stats(ctx, *, text=None):
-    if text:
-        text = text.lower()
-    conn, cur = db()
-    if text == 'ch':
-        info = discord.Embed(title=f'Статистика по серверу {ctx.message.guild.name}',
-                             color=discord.Color.green())
-        info.set_image(url=ctx.guild.icon_url)
-        return await logs.final_stats(info, ctx, logs.channel_data, cur)
-    elif text == 'day':
-        await logs.author_data_for_period(ctx, cur, MC.authors, 'За сегодня:')
-    elif text == 'week':
-        await logs.author_data_for_period(ctx, cur, MC.authors, 'За неделю:')
-    elif text == 'month':
-        await logs.author_data_for_period(ctx, cur, MC.authors, 'За месяц:')
-    elif text == 'max':
-        await logs.author_data_for_period(ctx, cur, MC.authors,
-                                          'Максимальные показатели', 'За день', 'За месяц')
-    else:
-        info = discord.Embed(title=f'Статистика по запросу пользователю',
-                             color=discord.Color.green())
-        info.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-        await logs.final_stats(info, ctx, logs.author_data, cur, MC.authors)
-    conn.close()
-    return
 
 
 # get random phrase
@@ -273,15 +231,15 @@ async def unmute(ctx, member: discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
-schedule.every().day.at("23:40").do(UserStats.daily_routine)
-schedule.every().thursday.at("23:16").do(UserStats.weekly_routine)
-schedule.every().day.at("23:44").do(UserStats.monthly_routine)
+schedule.every().day.at("20:45").do(UserStats.daily_routine)
+schedule.every().friday.at("20:46").do(UserStats.weekly_routine)
+schedule.every().day.at("20:36").do(UserStats.monthly_routine)
 
-schedule.every().day.at("23:50").do(ChanelStats.daily_routine)
-schedule.every().monday.at("23:52").do(ChanelStats.weekly_routine)
-schedule.every().day.at("23:54").do(ChanelStats.monthly_routine)
+schedule.every().day.at("20:47").do(ChanelStats.daily_routine)
+schedule.every().friday.at("20:38").do(ChanelStats.weekly_routine)
+schedule.every().day.at("20:39").do(ChanelStats.monthly_routine)
 
-schedule.every().day.at("23:56").do(MC.set_stats_to_zero)
+schedule.every().day.at("20:40").do(MDC.set_stats_to_zero)
 
 
 async def my_schedule():
@@ -296,6 +254,7 @@ async def on_ready():
     bot.loop.create_task(my_schedule())
     bot.add_cog(Google(bot))
     bot.add_cog(Translate(bot))
+    bot.add_cog(MessageStats(bot))
     print('Bot connected')
 
 bot.run(TOKEN)

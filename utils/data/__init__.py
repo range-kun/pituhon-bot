@@ -9,13 +9,14 @@ from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
 
 class Data:
-    table: Optional[sa.sql.schema.Table] = None
+    table: Optional[sa.Table] = None
     db: Optional[sa.engine.Engine] = None
 
     @classmethod
     def get_table(cls) -> sa.Table:
         if not cls.db:
             cls.connect_to_db()
+        if cls.table is None:
             cls.table = cls.create_table()
         return cls.table
 
@@ -46,9 +47,12 @@ class Data:
         cls.execute(statement=lambda: cls.table.insert(values=data), connection=connection)
 
     @classmethod
-    def update(cls, *, connection=None, condition, **data):
+    def update(cls, *, connection=None, condition=None, **data):
         cls.get_table()
-        cls.execute(statement=lambda: sa.update(cls.table).where(condition).values(**data), connection=connection)
+        query = sa.update(cls.table)
+        if condition is not None:
+            query = query.where(condition)
+        cls.execute(statement=lambda: query.values(**data), connection=connection)
 
     @classmethod
     def begin(cls):
@@ -86,6 +90,11 @@ class Data:
         result = cls.execute(statement=lambda: query, connection=connection)
 
         return result
+
+    @classmethod
+    def delete_all_table_data(cls, connection=None):
+        cls.get_table()
+        cls.execute(statement=lambda: sa.delete(cls.table), connection=connection)
 
     @classmethod
     def execute(cls, *, statement, connection=None):

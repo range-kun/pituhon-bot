@@ -14,3 +14,14 @@ def yesterday():
 
 def today():
     return datetime.date(datetime.now())
+
+
+def catch_exception(method):
+    async def wrapper(cls, *args, **kwargs):
+        try:
+            result = await method(cls, *args, **kwargs)
+        except Exception as e:
+            print(f"Поймано исключение в методе {method.__qualname__}: " + str(e))
+        else:
+            return result
+    return wrapper

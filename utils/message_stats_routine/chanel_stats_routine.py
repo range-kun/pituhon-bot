@@ -1,9 +1,10 @@
 import discord
 
 from configuration import TEST_CHANNEL_ID
-from utils import is_last_month_day
-from utils.data.message_stats import MaxServerSymbolsForPeriod, MaxServerMessagesForPeriod
-from utils.message_stats import Statistic, MessageCounter as MC
+from utils import is_last_month_day, catch_exception
+from utils.data.channel_stats import ServerStats
+
+from utils.message_stats_routine import Statistic, MessageDayCounter as MDC
 
 
 class ChanelStats(Statistic):
@@ -13,41 +14,90 @@ class ChanelStats(Statistic):
     messages_for_week = 0
 
     @classmethod
+    @catch_exception
     async def daily_routine(cls):
-        messages_info, symbols_info = cls.collect_stats_for_day()
-        if not messages_info:
+        if not MDC.messages:
             return
+        messages_champ, symbols_champ = cls.collect_stats_for_day()
         cls.update_max_stats_for_day()
-        await cls.send_message_stats_for_day(messages_info, symbols_info)
+        await cls.send_message_stats_for_day(messages_champ, symbols_champ)
 
     @classmethod
+    @catch_exception
     async def weekly_routine(cls):
         messages_info, symbols_info = cls.collect_stats_for_week()
-
+        if not messages_info:
+            return
         cls.update_max_stats_for_week()
-        await cls.send_message_stats_for_month(messages_info, symbols_info)
+        await cls.send_message_stats_for_week(messages_info, symbols_info)
+        cls.set_week_current_stats_to_zero()
 
     @classmethod
+    @catch_exception
     async def monthly_routine(cls):
-        if is_last_month_day():
-            messages_info, symbols_info = cls.collect_stats_for_month()
-            cls.update_max_stats_for_month()
-            await cls.send_message_stats_for_month(messages_info, symbols_info)
+        if not is_last_month_day():
+            return
+        messages_info, symbols_info = cls.collect_stats_for_month()
+        if not messages_info:
+            return
+        cls.update_max_stats_for_month()
+        await cls.send_message_stats_for_month(messages_info, symbols_info)
+        cls.set_month_current_stats_to_zero()
 
     @classmethod
-    def update_max_stats_for_day(cls):
-        cls.update_max_stats("day", MC.messages, MC.symbols)
+    def collect_stats_for_day(cls) -> tuple:
+        messages_champ, symbols_champ = MDC.get_server_champ_for_today()
+        return messages_champ, symbols_champ
 
     @classmethod
-    def collect_stats_for_day(cls):
-        messages_info, symbols_info = MC.get_server_stats_for_day()
+    def collect_stats_for_week(cls) -> tuple:
+        channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_week()
+        cls.messages_for_week, cls.symbols_for_week = channel_info
         return messages_info, symbols_info
 
     @classmethod
-    async def send_message_stats_for_day(cls, messages_info, symbols_info):
+    def collect_stats_for_month(cls) -> tuple:
+        channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_month()
+        cls.messages_for_month, cls.symbols_for_month = channel_info
+        return messages_info, symbols_info
 
+    @classmethod
+    def update_max_stats_for_day(cls):
+        cls.update_max_stats("day", MDC.messages, MDC.symbols)
+
+    @classmethod
+    def update_max_stats_for_week(cls):
+        cls.update_max_stats("week", cls.messages_for_week, cls.symbols_for_week)
+
+    @classmethod
+    def update_max_stats_for_month(cls):
+        cls.update_max_stats("month", cls.messages_for_month, cls.symbols_for_month)
+
+    @classmethod
+    def set_week_current_stats_to_zero(cls):
+        cls.symbols_for_week = 0
+        cls.messages_for_week = 0
+        ServerStats.set_current_stats_for_period_to_zero("week")
+
+    @classmethod
+    def set_month_current_stats_to_zero(cls):
+        cls.symbols_for_month = 0
+        cls.messages_for_month = 0
+        ServerStats.set_current_stats_for_period_to_zero("month")
+
+    @classmethod
+    def update_max_stats(
+            cls,
+            period: str,
+            current_amount_of_messages: int,
+            current_amount_of_symbols: int
+         ):
+        ServerStats.compare_and_update_max_stats(period, current_amount_of_messages, current_amount_of_symbols)
+
+    @classmethod
+    async def send_message_stats_for_day(cls, messages_info: tuple[int], symbols_info: tuple[int]):
         output = await cls.create_output_message(
-            channel_info=(MC.messages, MC.symbols),
+            channel_info=(MDC.messages, MDC.symbols),
             messages_info=messages_info,
             symbols_info=symbols_info,
             period_info=("Всего за день", "Информация по серверу за 24 часа"),
@@ -56,32 +106,16 @@ class ChanelStats(Statistic):
         await cls.channel().send(embed=output)
 
     @classmethod
-    def collect_stats_for_week(cls) -> tuple:
-        channel_info, messages_info, symbols_info = MC.get_server_stats_for_week()
-        cls.messages_for_week, cls.symbols_for_week = channel_info
-        return messages_info, symbols_info
-
-    @classmethod
     async def send_message_stats_for_week(cls, messages_info: tuple, symbols_info: tuple):
 
         output = await cls.create_output_message(
-            channel_info=(cls.messages_for_month, cls.symbols_for_month),
+            channel_info=(cls.messages_for_week, cls.symbols_for_week),
             messages_info=messages_info,
             symbols_info=symbols_info,
-            period_info=("Неделя", "Еженедельная информация"),
+            period_info=("неделю", "Еженедельная информация"),
         )
 
         await cls.channel().send(embed=output)
-
-    @classmethod
-    def update_max_stats_for_week(cls):
-        cls.update_max_stats("week", cls.messages_for_week, cls.symbols_for_week)
-
-    @classmethod
-    def collect_stats_for_month(cls) -> tuple:
-        channel_info, messages_info, symbols_info = MC.get_server_stats_for_month()
-        cls.messages_for_month, cls.symbols_for_month = channel_info
-        return messages_info, symbols_info
 
     @classmethod
     async def send_message_stats_for_month(cls,  messages_info: tuple, symbols_info: tuple):
@@ -94,31 +128,6 @@ class ChanelStats(Statistic):
         )
 
         await cls.channel().send(embed=output)
-
-    @classmethod
-    def update_max_stats_for_month(cls):
-        cls.update_max_stats("month", cls.messages_for_month, cls.symbols_for_month)
-
-    @classmethod
-    def channel(cls):
-        channel = cls.bot.get_channel(TEST_CHANNEL_ID)  # test mode
-        return channel
-
-    @classmethod
-    def update_max_stats(
-            cls,
-            period: str,
-            current_amount_of_messages: int,
-            current_amount_of_symbols: int
-         ):
-        max_amount_messages_for_period = MaxServerMessagesForPeriod.get_max_stats_for_period(period)[0]
-        max_amount_symbols_for_period = MaxServerSymbolsForPeriod.get_max_stats_for_period(period)[0]
-
-        if current_amount_of_messages > max_amount_messages_for_period:
-            MaxServerMessagesForPeriod.update_max_stats(period, MC.messages)
-
-        if current_amount_of_symbols > max_amount_symbols_for_period:
-            MaxServerSymbolsForPeriod.update_max_stats(period, MC.symbols)
 
     @classmethod
     async def create_output_message(cls, *, channel_info, messages_info, symbols_info, period_info):
@@ -137,7 +146,7 @@ class ChanelStats(Statistic):
                        f'Кол-во символов  =>{amount_of_all_symbols}'
         message_info = f'Чемпион по сообщениям => {user_name_with_most_messages}\n' \
                        f'Количество=>{amount_of_messages_top_user}'
-        symbol_info = f'Чемпион по символам =>{user_name_with_most_symbols } \n' \
+        symbol_info = f'Чемпион по символам =>{user_name_with_most_symbols} \n' \
                       f'Количество => {amount_of_symbols_top_user}'
         info_dict = {
             f'Всего за {name_of_period}': '=' * 25,
@@ -150,3 +159,8 @@ class ChanelStats(Statistic):
         for k, v in info_dict.items():
             emb.add_field(name=k, value=v, inline=False)
         return emb
+
+    @classmethod
+    def channel(cls):
+        channel = cls.bot.get_channel(TEST_CHANNEL_ID)  # test mode
+        return channel

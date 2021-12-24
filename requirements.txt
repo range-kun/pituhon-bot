@@ -3,10 +3,10 @@ websockets
 aiohttp==3.7.4.post0
 asyncio==3.4.3
 urllib3==1.26.5
-psycopg2==2.9.2
 lxml==4.6.4
 SQLAlchemy==1.4.27
 pyyaml==6.0
 googletrans==3.1.0a0
 langid==1.1.6
 aioschedule==0.5.2
+tabulate==0.8.9
