@@ -1,11 +1,12 @@
 import os
 
-CAPS = 0
 MAIN_CHANNEL_ID = 873248515042738176
 DB_NAME = "d3lg89is3baabv"
 DB_HOST = "ec2-52-211-144-45.eu-west-1.compute.amazonaws.com"
 MAX_HIST_RETRIEVE_RECORDS = 10
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
+PYTHON_BOT_ID = 698973448772386927
+TEST_CHANNEL_ID = 698975367326728352
 
 try:
     with open('config.txt', 'r') as my_file:
