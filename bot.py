@@ -231,15 +231,15 @@ async def unmute(ctx, member: discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
-schedule.every().day.at("20:45").do(UserStats.daily_routine)
-schedule.every().friday.at("20:46").do(UserStats.weekly_routine)
-schedule.every().day.at("20:36").do(UserStats.monthly_routine)
+schedule.every().day.at("23:00").do(UserStats.daily_routine)
+schedule.every().sunday.at("23:03").do(UserStats.weekly_routine)
+schedule.every().day.at("23:06").do(UserStats.monthly_routine)
 
-schedule.every().day.at("20:47").do(ChanelStats.daily_routine)
-schedule.every().friday.at("20:38").do(ChanelStats.weekly_routine)
-schedule.every().day.at("20:39").do(ChanelStats.monthly_routine)
+schedule.every().day.at("23:10").do(ChanelStats.daily_routine)
+schedule.every().sunday.at("23:13").do(ChanelStats.weekly_routine)
+schedule.every().day.at("23:16").do(ChanelStats.monthly_routine)
 
-schedule.every().day.at("20:40").do(MDC.set_stats_to_zero)
+schedule.every().day.at("23:19").do(MDC.set_stats_to_zero)
 
 
 async def my_schedule():

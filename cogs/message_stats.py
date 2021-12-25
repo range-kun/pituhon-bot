@@ -60,6 +60,7 @@ class MessageStats(commands.Cog):
         author_stats = MDC.authors.get(author.id)
         if not author_stats:
             await ctx.send("Напишите еще что нибудь")
+            return
 
         user_data = MessageStructure.create_author_day_data(
             author_stats.amount_of_messages,

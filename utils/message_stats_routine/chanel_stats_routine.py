@@ -26,7 +26,7 @@ class ChanelStats(Statistic):
     @catch_exception
     async def weekly_routine(cls):
         messages_info, symbols_info = cls.collect_stats_for_week()
-        if not messages_info:
+        if not cls.messages_for_week:
             return
         cls.update_max_stats_for_week()
         await cls.send_message_stats_for_week(messages_info, symbols_info)
@@ -38,7 +38,7 @@ class ChanelStats(Statistic):
         if not is_last_month_day():
             return
         messages_info, symbols_info = cls.collect_stats_for_month()
-        if not messages_info:
+        if not cls.messages_for_month:
             return
         cls.update_max_stats_for_month()
         await cls.send_message_stats_for_month(messages_info, symbols_info)
