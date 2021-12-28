@@ -14,6 +14,7 @@ from utils.data.history_record import HistoryRecord
 from cogs.message_stats import MessageStats
 from cogs.google_search import Google
 from cogs.translate import Translate
+from cogs.poll import Poll, PollMessageTrack
 from utils import today
 from utils.message_stats_routine import MessageDayCounter as MDC
 from utils.message_stats_routine.user_stats_routine import UserStats
@@ -23,13 +24,16 @@ CAPS = 0
 CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
 PREFIX = '?'  # command_prefix
 
-bot = commands.Bot(command_prefix=PREFIX)
-bot.remove_command('help')
-
 HELLO_WORDS = ['ky', 'ку']
 ANSWER_WORDS = ['узнать информацию о себе', 'какая информация',
                 'команды', 'команды сервера', 'что здесь делать']
 GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
+
+intents = discord.Intents().default()
+intents.members = True
+bot = commands.Bot(command_prefix=PREFIX, intents=intents)
+bot.remove_command('help')
+
 
 
 @bot.event
@@ -75,6 +79,21 @@ async def on_message(message):
         await message.channel.send(f'напиши {PREFIX}cmds и тебе откроются все тайны')
     elif msg_text in GOODBYE_WORDS:
         await message.channel.send('{} пиздуй бороздуй и я попиздил'.format(message.author.name))
+
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
+    if reaction.message.id in PollMessageTrack.poll_user_stats:
+        await PollMessageTrack.save_or_update_reactions(reaction, user)
+
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.message_id not in PollMessageTrack.poll_user_stats:
+        return
+    await PollMessageTrack.process_removal_of_reaction(payload.message_id, payload.user_id)
 
 
 # get random phrase
@@ -255,6 +274,7 @@ async def on_ready():
     bot.add_cog(Google(bot))
     bot.add_cog(Translate(bot))
     bot.add_cog(MessageStats(bot))
+    bot.add_cog(Poll(bot))
     print('Bot connected')
 
 bot.run(TOKEN)

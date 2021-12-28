@@ -1,6 +1,8 @@
 import calendar
 from datetime import datetime, timedelta
 
+from discord.channel import TextChannel
+
 
 def is_last_month_day():
     this_day = datetime.now()
@@ -14,6 +16,11 @@ def yesterday():
 
 def today():
     return datetime.date(datetime.now())
+
+
+def fetch_all_channel_users(channel: TextChannel) -> list:
+    human_members = [user for user in channel.members if not user.bot]
+    return human_members
 
 
 def catch_exception(method):

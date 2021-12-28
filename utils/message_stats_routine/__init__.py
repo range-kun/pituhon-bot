@@ -10,7 +10,6 @@ class UserStatsForCurrentDay(SimpleNamespace):
     amount_of_symbols: int = 0
     amount_of_messages: int = 0
 
-
 class MessageDayCounter:
     messages: int = 0
     symbols: int = 0
@@ -24,6 +23,8 @@ class MessageDayCounter:
 
     @classmethod
     def proceed_message_info(cls, message):
+        if message.author.bot:
+            return
         msg = message.content.lower()
         if message.author.id == PYTHON_BOT_ID:
             return

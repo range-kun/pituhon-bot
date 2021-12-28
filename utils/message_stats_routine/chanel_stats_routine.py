@@ -103,7 +103,7 @@ class ChanelStats(Statistic):
             period_info=("Всего за день", "Информация по серверу за 24 часа"),
         )
 
-        await cls.channel().send(embed=output)
+        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
 
     @classmethod
     async def send_message_stats_for_week(cls, messages_info: tuple, symbols_info: tuple):
@@ -115,7 +115,7 @@ class ChanelStats(Statistic):
             period_info=("неделю", "Еженедельная информация"),
         )
 
-        await cls.channel().send(embed=output)
+        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
 
     @classmethod
     async def send_message_stats_for_month(cls,  messages_info: tuple, symbols_info: tuple):
@@ -127,7 +127,7 @@ class ChanelStats(Statistic):
             period_info=("месяц", "Ежемесячная информация"),
         )
 
-        await cls.channel().send(embed=output)
+        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
 
     @classmethod
     async def create_output_message(cls, *, channel_info, messages_info, symbols_info, period_info):
@@ -161,6 +161,6 @@ class ChanelStats(Statistic):
         return emb
 
     @classmethod
-    def channel(cls):
-        channel = cls.bot.get_channel(TEST_CHANNEL_ID)  # test mode
+    def channel(cls, channel_id: int):
+        channel = cls.bot.get_channel(channel_id)  # test mode
         return channel

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Type, Any
+from typing import Type
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
