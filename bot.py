@@ -16,7 +16,7 @@ from cogs.google_search import Google
 from cogs.translate import Translate
 from cogs.voice_message import VoiceMessage
 from cogs.poll import Poll, PollMessageTrack
-from utils import today
+from utils import today, send_yaml_text
 from utils.message_stats_routine import MessageDayCounter as MDC
 from utils.message_stats_routine.user_stats_routine import UserStats
 from utils.message_stats_routine.chanel_stats_routine import ChanelStats
@@ -203,10 +203,14 @@ async def cmds(ctx):
     except FileNotFoundError:
         await ctx.send(r'При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯')
         return
+
     for command_name, description in commands_description.items():
         output += f"{PREFIX}{command_name}".ljust(20) + f"-- {description} \n"
-    yaml_message_style = str(f"```yaml\n{output}```")
-    await ctx.send(yaml_message_style)
+        if command_name == "hist text":  # because description above 2000 symbols and bot won't send it
+            await send_yaml_text(output, ctx)
+            output = ""
+    await send_yaml_text(output, ctx)
+
     languages_info = discord.Embed(
         title='Список языков и их сокращения',
         url='https://gist.githubusercontent.com/astronautlevel2/'

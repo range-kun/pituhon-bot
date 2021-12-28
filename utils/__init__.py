@@ -23,6 +23,11 @@ def fetch_all_channel_users(channel: TextChannel) -> list:
     return human_members
 
 
+async def send_yaml_text(text: str, ctx):
+    yaml_message_style = str(f"```yaml\n{text}```")
+    await ctx.send(yaml_message_style)
+
+
 def catch_exception(method):
     async def wrapper(cls, *args, **kwargs):
         try:
