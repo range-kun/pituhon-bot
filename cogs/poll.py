@@ -135,8 +135,7 @@ class PollMessageTrack:
 
         while (current_moment := datetime.now()) < finish_poll_time:
             users_already_voted = len(cls.poll_user_stats[poll_message_id].keys())
-            # if users_already_voted >= amount_of_voters:
-            if users_already_voted == 1:
+            if users_already_voted >= amount_of_voters:
                 break
             if current_moment > first_time_task and time_tasks == 2:
                 time_tasks = 1
