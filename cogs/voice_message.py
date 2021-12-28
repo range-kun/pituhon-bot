@@ -10,7 +10,7 @@ import langid
 class VoiceMessage(commands.Cog):
 
     @commands.command()
-    async def voice(self, ctx, *, text: str):
+    async def v(self, ctx, *, text: str):
         await ctx.message.delete()
         message_language = langid.classify(text)[0]
         t1 = gtts.gTTS(text, lang=message_language)
