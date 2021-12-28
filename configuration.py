@@ -7,7 +7,7 @@ MAX_HIST_RETRIEVE_RECORDS = 10
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
 PYTHON_BOT_ID = 698973448772386927
 TEST_CHANNEL_ID = 698975367326728352
-VOTE_TIME = 12  # minutes
+VOTE_TIME = 60  # minutes
 
 try:
     with open('config.txt', 'r') as my_file:
