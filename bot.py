@@ -14,6 +14,7 @@ from utils.data.history_record import HistoryRecord
 from cogs.message_stats import MessageStats
 from cogs.google_search import Google
 from cogs.translate import Translate
+from cogs.voice_message import VoiceMessage
 from cogs.poll import Poll, PollMessageTrack
 from utils import today
 from utils.message_stats_routine import MessageDayCounter as MDC
@@ -33,7 +34,6 @@ intents = discord.Intents().default()
 intents.members = True
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 bot.remove_command('help')
-
 
 
 @bot.event
@@ -153,7 +153,7 @@ async def caps(ctx):
 @bot.command(pass_context=True)
 @commands.has_permissions(administrator=True)
 async def clear(ctx, amount=10):
-    await ctx.channel.purge(limit=amount)
+    await ctx.channel.purge(limit=amount+1)
 
 
 # kick
@@ -175,7 +175,6 @@ async def ban(ctx, member: discord.Member, *, reason):
 
 
 # unban
-
 @bot.command(pass_context=True)
 @commands.has_permissions(administrator=True)
 async def unban(ctx, *, member):
@@ -250,6 +249,7 @@ async def unmute(ctx, member: discord.Member):
         await ctx.send('{} отмьючен'.format(member.mention))
         return
 
+
 schedule.every().day.at("23:00").do(UserStats.daily_routine)
 schedule.every().sunday.at("23:03").do(UserStats.weekly_routine)
 schedule.every().day.at("23:06").do(UserStats.monthly_routine)
@@ -275,6 +275,7 @@ async def on_ready():
     bot.add_cog(Translate(bot))
     bot.add_cog(MessageStats(bot))
     bot.add_cog(Poll(bot))
+    bot.add_cog(VoiceMessage(bot))
     print('Bot connected')
 
 bot.run(TOKEN)

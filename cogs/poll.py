@@ -46,7 +46,6 @@ class Poll(commands.Cog):
             "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
             "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"
         ]
-        self.poll_user_stats: dict[int, dict[int, Reaction]] = {}
 
     # parses the title, which should be in between curly brackets ('{title}')
     @staticmethod
