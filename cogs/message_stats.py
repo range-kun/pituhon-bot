@@ -122,7 +122,7 @@ class MessageStats(commands.Cog):
                              color=discord.Color.green())
         info.set_author(name=author.name, icon_url=author.avatar_url)
         for name, value in data_dict.items():
-            info.add_field(name=name, value=value)
+            info.add_field(name=name, value=value or "Информации пока нет")
 
         return info
 
@@ -169,7 +169,7 @@ class MessageStructure:
         for period, amount, record_date in zip(headers, user_max_info[0::2], user_max_info[1::2]):
             if not amount:
                 continue
-            record_date = cls.format_record_date(is_month=period == "за месяц", record_date=record_date)
+            record_date = cls.format_record_date(is_month=period[1] == "за месяц", record_date=record_date)
 
             max_stats_structure.append(period)
             max_stats_structure.append([amount, record_date])
