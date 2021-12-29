@@ -6,7 +6,6 @@ lxml==4.6.5
 SQLAlchemy==1.4.27
 pyyaml==6.0
 googletrans==3.1.0a0
-langid==1.1.6
 aioschedule==0.5.2
 tabulate==0.8.9
 psycopg2==2.9.2
