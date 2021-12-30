@@ -16,36 +16,37 @@ from configuration import VOTE_TIME
 
 
 class Poll(commands.Cog):
+    emoji_letters = [
+        "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER C}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER D}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER G}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER H}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER J}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER L}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER M}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER N}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER P}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER Q}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER V}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+        "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"
+    ]
+
     def __init__(self, bot):
         self.bot = bot
-        self.emoji_letters = [
-            "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER C}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER D}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER E}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER G}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER H}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER I}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER J}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER K}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER L}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER M}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER N}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER P}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER Q}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER R}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER S}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER T}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER U}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER V}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
-            "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"
-        ]
 
     # parses the title, which should be in between curly brackets ('{title}')
     @staticmethod
@@ -92,14 +93,15 @@ class Poll(commands.Cog):
             return
 
         options = self.find_options(text)
-        if len(options) < 2:
+        amount_of_options = len(options)
+        if amount_of_options < 2:
 
             await message.channel.send(
                 "Указана только одна опция пожалуйста используйте следующий формат:"
                 "?poll: {Тема} [Вариант 1] [Вариант 2] [Вариант 3]"
             )
             return
-        if len(options) > len(self.emoji_letters):
+        if amount_of_options > len(self.emoji_letters):
             await message.channel.send(
                 f"Указана слишком много опций, пожалуйсте ограничтесь {len(self.emoji_letters)}"
             )
@@ -107,11 +109,12 @@ class Poll(commands.Cog):
         embed_poll = self.create_poll_message(options, title)
         poll_message = await message.channel.send(embed=embed_poll)
         await self.add_reaction(poll_message, options)
-        await self.add_for_tracking(poll_message.id, message.channel, poll_message.jump_url)
+        await self.add_for_tracking(poll_message.id, message.channel, poll_message.jump_url, amount_of_options)
 
     @staticmethod
-    async def add_for_tracking(message_id: int, channel: TextChannel, poll_message_url: str):
+    async def add_for_tracking(message_id: int, channel: TextChannel, poll_message_url: str, amount_of_options: int):
         PollMessageTrack.poll_user_stats[message_id] = {}
+        PollMessageTrack.amount_of_reactions[message_id] = amount_of_options
         await PollMessageTrack.run_vote_loop(message_id, channel, poll_message_url)
 
 
@@ -122,6 +125,7 @@ class UserReactions(NamedTuple):
 
 class PollMessageTrack:
     poll_user_stats: dict[int, dict[int, UserReactions]] = {}  # {message_id: {user_id: UserReactions}}
+    amount_of_reactions: dict[int, int] = {}  # {message_id: amount_of_reactions}
 
     @classmethod
     async def run_vote_loop(cls, poll_message_id: int, channel: TextChannel, poll_message_url: str):
@@ -155,6 +159,7 @@ class PollMessageTrack:
     @classmethod
     async def send_results(cls, message_id: int, channel: TextChannel):
         users_reaction_to_message = cls.poll_user_stats.pop(message_id)
+        del cls.amount_of_reactions[message_id]
         reactions = [user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()]
         message = await channel.fetch_message(message_id)
 
@@ -178,6 +183,11 @@ class PollMessageTrack:
         message = new_reaction.message
         user_id = user.id
         users_reaction_to_message = cls.poll_user_stats[message.id]
+        amount_of_reactions = cls.amount_of_reactions[message.id]
+        allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
+
+        if new_reaction not in allowed_reactions:
+            await new_reaction.remove(user)
 
         if user_id not in users_reaction_to_message:
             user_reaction = UserReactions(first_reaction=new_reaction)
