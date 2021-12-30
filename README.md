@@ -1,5 +1,6 @@
 # Discord Bot for Heroku
-This bot has a wide functionality, and pretty easy to deploy
+This bot has a wide functionality, and pretty easy to deploy<br>
+![message_stats](Screenshot_1.png)
 ## Configuration
 All configurations can be done with using config.py file
 ### This bot was written for users of Russian servers, and send all data in russian. Although the code and database structure was written if possible in English 
