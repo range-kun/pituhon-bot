@@ -45,6 +45,8 @@ class Poll(commands.Cog):
         "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"
     ]
 
+    emojis = ['👍', '👎', '🤷']
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -84,11 +86,10 @@ class Poll(commands.Cog):
 
         title = self.find_title(text)
         if not title:
-            await message.add_reaction('👍')
-            await message.add_reaction('👎')
-            await message.add_reaction('🤷')
+            for emoji in self.emojis:
+                await message.add_reaction(emoji)
             await message.channel.send(f"Голосование продлится {VOTE_TIME} минут")
-            await self.add_for_tracking(message.id, message.channel, message.jump_url)
+            await self.add_for_tracking(message, 3)
 
             return
 
@@ -109,13 +110,16 @@ class Poll(commands.Cog):
         embed_poll = self.create_poll_message(options, title)
         poll_message = await message.channel.send(embed=embed_poll)
         await self.add_reaction(poll_message, options)
-        await self.add_for_tracking(poll_message.id, message.channel, poll_message.jump_url, amount_of_options)
+        await self.add_for_tracking(poll_message, amount_of_options)
 
     @staticmethod
-    async def add_for_tracking(message_id: int, channel: TextChannel, poll_message_url: str, amount_of_options: int):
-        PollMessageTrack.poll_user_stats[message_id] = {}
-        PollMessageTrack.amount_of_reactions[message_id] = amount_of_options
-        await PollMessageTrack.run_vote_loop(message_id, channel, poll_message_url)
+    async def add_for_tracking(
+            message: DiscordMessage,
+            amount_of_options: int
+    ):
+        PollMessageTrack.poll_user_stats[message.id] = {}
+        PollMessageTrack.amount_of_reactions[message.id] = amount_of_options
+        await PollMessageTrack.run_vote_loop(message.id, message.channel, message.jump_url)
 
 
 class UserReactions(NamedTuple):
@@ -125,7 +129,7 @@ class UserReactions(NamedTuple):
 
 class PollMessageTrack:
     poll_user_stats: dict[int, dict[int, UserReactions]] = {}  # {message_id: {user_id: UserReactions}}
-    amount_of_reactions: dict[int, int] = {}  # {message_id: amount_of_reactions}
+    amount_of_reactions: dict[int, int] = {}  # {message_id:  amount_of_reactions}
 
     @classmethod
     async def run_vote_loop(cls, poll_message_id: int, channel: TextChannel, poll_message_url: str):
@@ -163,7 +167,7 @@ class PollMessageTrack:
         reactions = [user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()]
         message = await channel.fetch_message(message_id)
 
-        if len(reactions) == len(set(reactions)) and len(reactions) < 2:
+        if len(reactions) == len(set(reactions)) and len(reactions) != 1:
             description = f"[Голосование]({message.jump_url}) " \
                           f"завершилось победитель не выявлен"
             await cls.send_poll_notification(description, channel)
@@ -183,8 +187,7 @@ class PollMessageTrack:
         message = new_reaction.message
         user_id = user.id
         users_reaction_to_message = cls.poll_user_stats[message.id]
-        amount_of_reactions = cls.amount_of_reactions[message.id]
-        allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
+        allowed_reactions = cls.parse_allowed_reactions(message)
 
         if str(new_reaction) not in allowed_reactions:
             await new_reaction.remove(user)
@@ -235,3 +238,11 @@ class PollMessageTrack:
             embed.title = title
         embed.description = string
         await channel.send(embed=embed)
+
+    @classmethod
+    def parse_allowed_reactions(cls, message: DiscordMessage) -> list:
+        if not message.embeds:
+            return Poll.emojis
+        amount_of_reactions = cls.amount_of_reactions[message.id]
+        allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
+        return allowed_reactions

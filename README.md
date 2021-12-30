@@ -24,5 +24,5 @@ Track stats for different periods of time: day, week and all time together. As w
 ### Thanks:
 Some parts of code been copy pasted (or used as starting point) and then updated to be used inside my bot, here is the references: <br />
 Point 3, 4, 12 -> https://github.com/appu1232/Discord-Selfbot<br />
-Point 6 -> https://github.com/stayingqold/Poll-Bot
+Point 6 -> https://github.com/stayingqold/Poll-Bot<br />
 PS I hope it's legal and i won't go to jail ^_^
