@@ -186,8 +186,9 @@ class PollMessageTrack:
         amount_of_reactions = cls.amount_of_reactions[message.id]
         allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
 
-        if new_reaction not in allowed_reactions:
+        if str(new_reaction) not in allowed_reactions:
             await new_reaction.remove(user)
+            return
 
         if user_id not in users_reaction_to_message:
             user_reaction = UserReactions(first_reaction=new_reaction)
@@ -207,7 +208,7 @@ class PollMessageTrack:
         if user_id not in users_reaction_to_message:
             return
 
-        user_previous_reactions = users_reaction_to_message.pop(user_id)
+        user_previous_reactions = users_reaction_to_message[user_id]
         if user_previous_reactions.second_reaction is not None:
             user_new_reactions = {user_id: UserReactions(
                 first_reaction=user_previous_reactions.first_reaction,
