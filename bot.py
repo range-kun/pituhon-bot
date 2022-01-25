@@ -128,7 +128,7 @@ async def hist(ctx, *, text: str):
 
 
 @bot.command(pass_context=True)
-async def rec(ctx, text, *, num=None):
+async def rec(ctx, text=None, *, num=None):
     result = HistoryRecord.get_record(text, offset=num)
     if type(result) == str:
         await ctx.send(result)
