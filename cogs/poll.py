@@ -7,6 +7,7 @@ import discord
 from discord import User
 from discord.channel import TextChannel
 from discord.ext import commands
+from discord.embeds import Embed
 from discord.message import Message as DiscordMessage
 from discord.ext.commands.cooldowns import BucketType
 from discord.reaction import Reaction
@@ -104,7 +105,7 @@ class Poll(commands.Cog):
             return
         if amount_of_options > len(self.emoji_letters):
             await message.channel.send(
-                f"Указана слишком много опций, пожалуйсте ограничтесь {len(self.emoji_letters)}"
+                f"Указано слишком много опций, пожалуйсте ограничтесь {len(self.emoji_letters)}"
             )
             return
         embed_poll = self.create_poll_message(options, title)
@@ -133,12 +134,15 @@ class PollMessageTrack:
 
     @classmethod
     async def run_vote_loop(cls, poll_message_id: int, channel: TextChannel, poll_message_url: str):
-        amount_of_voters = len(fetch_all_channel_users(channel))
-        time_tasks = 2
+        amount_of_voters = len(fetch_all_channel_users(channel)) - 1  # -1 only for my chanel :D
+        time_tasks = 2  # scheduled reminders
         current_moment = datetime.now()
         finish_poll_time = current_moment + timedelta(minutes=VOTE_TIME)
         first_time_task = current_moment + timedelta(minutes=VOTE_TIME//2)
         second_time_task = finish_poll_time - timedelta(minutes=5)
+
+        message = await channel.fetch_message(poll_message_id)
+        title, _, _ = cls.fetch_message_info(message)
 
         while (current_moment := datetime.now()) < finish_poll_time:
             users_already_voted = len(cls.poll_user_stats[poll_message_id].keys())
@@ -148,39 +152,40 @@ class PollMessageTrack:
                 time_tasks = 1
                 description = f"До конца [голосования]({poll_message_url}) " \
                               f"осталось {VOTE_TIME//2} минут, " \
-                              f"ваш мнение очеь важо для нас."
-                await cls.send_poll_notification(description, channel)
+                              f"ваш мнение очень важно для нас."
+                await cls.send_poll_notification(description, channel, title=title)
 
             if current_moment > second_time_task and time_tasks == 1:
                 time_tasks = 0
                 description = f"До конца [голосования]({poll_message_url}) " \
                               f"остлось всего 5 минут," \
-                              f" еще не поздно сделать вборсы."
-                await cls.send_poll_notification(description, channel)
+                              f" еще не поздно сделать вбросы."
+                await cls.send_poll_notification(description, channel, title=title)
             await asyncio.sleep(15)
-        await cls.send_results(poll_message_id, channel)
+        await cls.send_results(message, channel)
 
     @classmethod
-    async def send_results(cls, message_id: int, channel: TextChannel):
+    async def send_results(cls, message: DiscordMessage, channel: TextChannel):
+        title, reaction_names, message_id = cls.fetch_message_info(message)
+
         users_reaction_to_message = cls.poll_user_stats.pop(message_id)
         del cls.amount_of_reactions[message_id]
         reactions = [user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()]
-        message = await channel.fetch_message(message_id)
 
         if len(reactions) == len(set(reactions)) and len(reactions) != 1:
             description = f"[Голосование]({message.jump_url}) " \
                           f"завершилось победитель не выявлен"
-            await cls.send_poll_notification(description, channel)
+            await cls.send_poll_notification(description, channel, title=title)
             return
 
-        title, reaction_names = cls.fetch_message_info(message)
         emoji_top_reaction = str(max(reactions, key=reactions.count))
         if reaction_names:
             emoji_top_reaction = list(filter(lambda reaction: emoji_top_reaction in reaction, reaction_names))[0]
 
         description = f"**[Голосование]({message.jump_url}) завершилось.** " \
                       f"Больше всего голосов набрал вариант: \n\n {emoji_top_reaction}"
-        await cls.send_poll_notification(description, channel, title=title)
+        result_message = await cls.send_poll_notification(description, channel, title=title)
+        await cls.mark_finished(message, result_message)
 
     @classmethod
     async def save_or_update_reactions(cls, new_reaction: Reaction, user: User):
@@ -229,15 +234,16 @@ class PollMessageTrack:
             message_intro = "?poll"
             title = message.content[len(message_intro):].strip()
             reactions = None
-        return title, reactions
+        return title, reactions, message.id
 
     @staticmethod
-    async def send_poll_notification(string: str, channel: TextChannel, title=None):
+    async def send_poll_notification(string: str, channel: TextChannel, title=None) -> DiscordMessage:
         embed = discord.Embed(colour=0x83bae3)
         if title:
             embed.title = title
         embed.description = string
-        await channel.send(embed=embed)
+        result_message = await channel.send(embed=embed)
+        return result_message
 
     @classmethod
     def parse_allowed_reactions(cls, message: DiscordMessage) -> list:
@@ -246,3 +252,13 @@ class PollMessageTrack:
         amount_of_reactions = cls.amount_of_reactions[message.id]
         allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
         return allowed_reactions
+
+    @classmethod
+    async def mark_finished(cls, poll_message: DiscordMessage, result_message):
+        if poll_message.embeds:
+            message_embed = poll_message.embeds[0]
+            description = message_embed.description
+            description += f"\n\nГолсование окончено. Результаты [тут]({result_message.jump_url})."
+            new_embed = Embed(title=message_embed.title,
+                              description=description)
+            await poll_message.edit(embed=new_embed)
