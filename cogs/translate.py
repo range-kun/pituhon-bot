@@ -3,15 +3,20 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from googletrans import Translator, LANGUAGES
-import langid
+
 
 from configuration import DEFAULT_TRANSLATE_LANGUAGE
 
 
 class Translate(commands.Cog):
+    translator = Translator()
+
     def __init__(self, bot):
         self.bot = bot
-        self.translator = Translator()
+
+    @classmethod
+    def determinate_language(cls, msg: str) -> str:
+        return cls.translator.detect(msg).lang
 
     @staticmethod
     def parse_user_desired_language(to_language: str) -> Optional[str]:
@@ -28,15 +33,9 @@ class Translate(commands.Cog):
         return to_language
 
     @staticmethod
-    def is_it_default_language(msg: str) -> bool:
-
-        language = langid.classify(msg)[0]
-        return LANGUAGES[language] == DEFAULT_TRANSLATE_LANGUAGE
-
-    @staticmethod
-    def create_output(translate: str, original_text: str, language: str) -> discord.Embed:
+    def create_output(translate: str, original_text: str, language: str, original_language: str) -> discord.Embed:
         embed = discord.Embed(color=discord.Color.blue())
-        embed.add_field(name="Original", value=original_text, inline=False)
+        embed.add_field(name=f"Original -> {original_language}", value=original_text, inline=False)
         embed.add_field(name=language, value=translate, inline=False)
         if translate == original_text:
             embed.add_field(name="Warning",
@@ -62,9 +61,10 @@ class Translate(commands.Cog):
                                f" использую {DEFAULT_TRANSLATE_LANGUAGE} в качестве языка для перевода.")
                 to_language = DEFAULT_TRANSLATE_LANGUAGE
 
-        if not to_language:
-            if not self.is_it_default_language(msg):
-                to_language = DEFAULT_TRANSLATE_LANGUAGE
+        original_language = LANGUAGES.get(self.determinate_language(msg))
+        if not to_language and\
+                not original_language == DEFAULT_TRANSLATE_LANGUAGE:
+            to_language = DEFAULT_TRANSLATE_LANGUAGE
 
         try:
             if to_language:
@@ -77,6 +77,6 @@ class Translate(commands.Cog):
             return
 
         translated_text, translated_language = result.text.capitalize(), LANGUAGES[result.dest]
-        output_embed = self.create_output(translated_text, msg, translated_language)
+        output_embed = self.create_output(translated_text, msg, translated_language, original_language)
 
-        await ctx.send("", embed=output_embed)
+        await ctx.send(embed=output_embed)

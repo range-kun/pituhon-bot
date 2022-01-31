@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import extract
 
 from configuration import MAX_HIST_RETRIEVE_RECORDS
-from data import Data
+from utils.data import Data
 
 
 class HistoryRecord(Data):
@@ -45,13 +45,13 @@ class HistoryRecord(Data):
             return extract("year", date_field) == year
 
     @classmethod
-    def get_record(cls, text: str, offset: Optional[str] = None) -> Union[list, str]:
+    def get_record(cls, text: str = None, offset: Optional[str] = None) -> Union[list, str]:
+        if not text:
+            record = cls.get_random_record()
+            return record
+
         date = cls.parse_date(text)
         limit = None
-        if not date:
-            return "Указан неверный формат даты. " \
-                   "Укажите дату в следующем виде дд-мм-гггг"
-
         if offset:
             if offset.isdigit():
                 offset = max(0, int(offset) - 1)
@@ -69,7 +69,7 @@ class HistoryRecord(Data):
                                   )
         except Exception as e:
             print(e)
-            return "Извините произошла ошибка при попоытке достать фразу"
+            return "Извините произошла ошибка при попытке достать фразу"
 
         result = result.fetchall()
         if (query_len := len(result)) > MAX_HIST_RETRIEVE_RECORDS:
@@ -77,3 +77,12 @@ class HistoryRecord(Data):
                    f"могу показать не более {MAX_HIST_RETRIEVE_RECORDS} записей за один раз. " \
                    f"Пожалуйста укажите номер записи с которой начать -> rec 2021 5"
         return result or "На указанную дату записей не найдено"
+
+    @classmethod
+    def get_random_record(cls) -> str:
+        try:
+            record = cls.get_data("date", "log", limit=1, order=sa.func.random()).fetchall()
+        except Exception as e:
+            print(e)
+            return 'Извините не удалось получить фразу'
+        return record
