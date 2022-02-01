@@ -262,7 +262,9 @@ schedule.every().day.at("23:10").do(ChanelStats.daily_routine)
 schedule.every().sunday.at("23:13").do(ChanelStats.weekly_routine)
 schedule.every().day.at("23:16").do(ChanelStats.monthly_routine)
 
-schedule.every().day.at("23:19").do(MDC.set_stats_to_zero)
+
+schedule.every().day.at("23:20").do(MDC.delete_redis_info)
+schedule.every(20).minutes.do(MDC.counter_routine)
 
 
 async def my_schedule():

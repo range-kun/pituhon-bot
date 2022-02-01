@@ -10,3 +10,4 @@ aioschedule==0.5.2
 tabulate==0.8.9
 gTTS==2.2.3
 psycopg2==2.9.3
+redis==4.1.2

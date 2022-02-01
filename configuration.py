@@ -8,6 +8,8 @@ DEFAULT_TRANSLATE_LANGUAGE = "russian"
 PYTHON_BOT_ID = 698973448772386927
 TEST_CHANNEL_ID = 698975367326728352
 VOTE_TIME = 60  # minutes
+REDIS_HOST = "redis-17886.c293.eu-central-1-1.ec2.cloud.redislabs.com"
+REDIS_PORT = 17886
 
 try:
     with open('config.txt', 'r') as my_file:
@@ -16,6 +18,7 @@ try:
         SEARCH_ENGINE_ID = my_file.readline().strip()
         DB_USER = my_file.readline().strip()
         DB_PASSWORD = my_file.readline().strip()
+        REDIS_PASSWORD = my_file.readline().strip()
         
 except FileNotFoundError:
     TOKEN = os.environ.get('BOT_TOKEN')
@@ -23,3 +26,4 @@ except FileNotFoundError:
     SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
     DB_USER = os.environ.get('DB_USER')
     DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
