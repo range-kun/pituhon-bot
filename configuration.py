@@ -1,4 +1,5 @@
 import os
+import yaml
 
 MAIN_CHANNEL_ID = 873248515042738176
 DB_NAME = "d3lg89is3baabv"
@@ -12,18 +13,15 @@ REDIS_HOST = "redis-17886.c293.eu-central-1-1.ec2.cloud.redislabs.com"
 REDIS_PORT = 17886
 
 try:
-    with open('config.txt', 'r') as my_file:
-        TOKEN = my_file.readline().strip()
-        API_KEY = my_file.readline().strip()
-        SEARCH_ENGINE_ID = my_file.readline().strip()
-        DB_USER = my_file.readline().strip()
-        DB_PASSWORD = my_file.readline().strip()
-        REDIS_PASSWORD = my_file.readline().strip()
-        
+    with open('config.yaml', 'r') as my_file:
+        secret_configs = yaml.safe_load(my_file)
+        secret_configs_getter = secret_configs.get
 except FileNotFoundError:
-    TOKEN = os.environ.get('BOT_TOKEN')
-    API_KEY = os.environ.get('API_KEY')
-    SEARCH_ENGINE_ID = os.environ.get('SEARCH_ENGINE_ID')
-    DB_USER = os.environ.get('DB_USER')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD')
-    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+    secret_configs_getter = os.environ.get
+    
+TOKEN = secret_configs_getter('BOT_TOKEN')
+API_KEY = secret_configs_getter('API_KEY')
+SEARCH_ENGINE_ID = secret_configs_getter('SEARCH_ENGINE_ID')
+DB_USER = secret_configs_getter('DB_USER')
+DB_PASSWORD = secret_configs_getter('DB_PASSWORD')
+REDIS_PASSWORD = secret_configs_getter('REDIS_PASSWORD')
