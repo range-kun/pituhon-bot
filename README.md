@@ -9,7 +9,7 @@ All configurations can be done with using config.py file
 2. Deleting messages using the ?clear command 
 3. Getting a random picture using Google engine 
 4. Possibility of search queries in Google 
-* To be able use point 3 and 4 you have to get google api tokens and put the to config.txt file, or keep them as system variables 
+* To be able use point 3 and 4 you have to get google api tokens and put the to config.yaml file, or keep them as system variables 
 5. Sending voice messages
 6. Creating poll messeage of two types, what will send results at the end of the vote time.
 7. Extensive opportunities to calculate the statistics of messages. This bot can keep message and symbols stats. 
