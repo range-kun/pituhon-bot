@@ -15,13 +15,13 @@ REDIS_PORT = 17886
 try:
     with open('config.yaml', 'r') as my_file:
         secret_configs = yaml.safe_load(my_file)
-        secret_configs_getter = secret_configs.get
+        secret_configs_getter = secret_configs
 except FileNotFoundError:
-    secret_configs_getter = os.environ.get
+    secret_configs = os.environ
     
-TOKEN = secret_configs_getter('BOT_TOKEN')
-API_KEY = secret_configs_getter('API_KEY')
-SEARCH_ENGINE_ID = secret_configs_getter('SEARCH_ENGINE_ID')
-DB_USER = secret_configs_getter('DB_USER')
-DB_PASSWORD = secret_configs_getter('DB_PASSWORD')
-REDIS_PASSWORD = secret_configs_getter('REDIS_PASSWORD')
+TOKEN = secret_configs.get('BOT_TOKEN')
+API_KEY = secret_configs.get('API_KEY')
+SEARCH_ENGINE_ID = secret_configs.get('SEARCH_ENGINE_ID')
+DB_USER = secret_configs.get('DB_USER')
+DB_PASSWORD = secret_configs.get('DB_PASSWORD')
+REDIS_PASSWORD = secret_configs.get('REDIS_PASSWORD')

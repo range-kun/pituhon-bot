@@ -24,6 +24,13 @@ class UserStatsForCurrentDay:
     amount_of_symbols: int = 0
     amount_of_messages: int = 0
 
+    def __add__(self, other):
+        if isinstance(other, UserStatsForCurrentDay):
+            self.amount_of_symbols += other.amount_of_symbols
+            self.amount_of_messages += other.amount_of_messages
+            return self
+        raise TypeError(f"Unsupported type of data {type(other)} for operand +")
+
 
 class MessageDayCounter:
     _messages: int = 0
@@ -85,12 +92,8 @@ class MessageDayCounter:
         for user_id in users_id:
             old_data = redis_authors.get(user_id, cls.default_user_stats)
             current_data = cls._authors.get(user_id, cls.default_user_stats)
-            new_data = UserStatsForCurrentDay(
-                amount_of_messages=old_data.amount_of_messages + current_data.amount_of_messages,
-                amount_of_symbols=old_data.amount_of_symbols + current_data.amount_of_symbols
-            )
-            authors[user_id] = new_data
-
+            authors[user_id] = current_data + old_data
+        print(authors)
         return authors
 
     @classmethod
@@ -108,7 +111,7 @@ class MessageDayCounter:
             number_of_symbols_in_string = len(msg.replace(' ', ''))
             cls._symbols += len(msg.replace(' ', ''))
 
-        user_stats = cls._authors.get(message.author.id, cls.default_user_stats)
+        user_stats = cls._authors.get(message.author.id, UserStatsForCurrentDay())
         user_stats.amount_of_messages = user_stats.amount_of_messages + 1
         user_stats.amount_of_symbols = user_stats.amount_of_symbols + number_of_symbols_in_string
         cls._authors[message.author.id] = user_stats
