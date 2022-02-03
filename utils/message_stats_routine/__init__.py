@@ -26,9 +26,9 @@ class UserStatsForCurrentDay:
 
     def __add__(self, other):
         if isinstance(other, UserStatsForCurrentDay):
-            self.amount_of_symbols += other.amount_of_symbols
-            self.amount_of_messages += other.amount_of_messages
-            return self
+            amount_of_symbols = self.amount_of_symbols + other.amount_of_symbols
+            amount_of_messages = self.amount_of_messages + other.amount_of_messages
+            return UserStatsForCurrentDay(amount_of_messages=amount_of_messages, amount_of_symbols=amount_of_symbols)
         raise TypeError(f"Unsupported type of data {type(other)} for operand +")
 
 
@@ -92,8 +92,8 @@ class MessageDayCounter:
         for user_id in users_id:
             old_data = redis_authors.get(user_id, cls.default_user_stats)
             current_data = cls._authors.get(user_id, cls.default_user_stats)
-            authors[user_id] = current_data + old_data
-        print(authors)
+            new_data = current_data + old_data
+            authors[user_id] = new_data
         return authors
 
     @classmethod
