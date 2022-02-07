@@ -6,7 +6,7 @@ from discord.channel import TextChannel
 
 def is_last_month_day():
     this_day = datetime.now()
-    last_month_day = calendar.monthrange(this_day.year, this_day.month)[0]
+    last_month_day = calendar.monthrange(this_day.year, this_day.month)[1]
     return last_month_day == this_day.day
 
 
