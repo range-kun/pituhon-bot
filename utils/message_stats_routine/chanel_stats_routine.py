@@ -4,6 +4,7 @@ from configuration import TEST_CHANNEL_ID
 from utils import is_last_month_day, catch_exception
 from utils.data.channel_stats import ServerStats
 
+from cogs.message_stats import MessageChannel
 from utils.message_stats_routine import Statistic, MessageDayCounter as MDC
 
 
@@ -103,7 +104,7 @@ class ChanelStats(Statistic):
             period_info=("Всего за день", "Информация по серверу за 24 часа"),
         )
 
-        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
+        await cls.channel().send(embed=output)
 
     @classmethod
     async def send_message_stats_for_week(cls, messages_info: tuple, symbols_info: tuple):
@@ -115,7 +116,7 @@ class ChanelStats(Statistic):
             period_info=("неделю", "Еженедельная информация"),
         )
 
-        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
+        await cls.channel().send(embed=output)
 
     @classmethod
     async def send_message_stats_for_month(cls,  messages_info: tuple, symbols_info: tuple):
@@ -161,6 +162,8 @@ class ChanelStats(Statistic):
         return emb
 
     @classmethod
-    def channel(cls, channel_id: int):
-        channel = cls.bot.get_channel(channel_id)  # test mode
+    def channel(cls):
+        channel_id = MessageChannel.get_stats_channel()
+        print(channel_id)
+        channel = cls.bot.get_channel(channel_id)
         return channel
