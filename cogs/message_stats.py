@@ -6,16 +6,46 @@ from discord.ext import commands
 from discord.ext.commands.bot import Bot as DiscordBot
 from tabulate import tabulate
 
+from configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID
 from utils.data import Data
 from utils.message_stats_routine import MessageDayCounter as MDC
 from utils.data.channel_stats import ServerStats
 from utils.data.user_stats import UserCurrentStats, UserMaxStats, UserOverallStats
 
 
+class MessageChannel:
+    stats_channel = MAIN_CHANNEL_ID
+
+    @classmethod
+    def get_stats_channel(cls) -> int:
+        return cls.stats_channel
+
+    @classmethod
+    def set_stats_channel(cls, text: str):
+        if text == "-m":
+            cls.stats_channel = MAIN_CHANNEL_ID
+        elif text == "-t":
+            cls.stats_channel = TEST_CHANNEL_ID
+
+
 class MessageStats(commands.Cog):
 
     def __init__(self, bot):
         self.bot: DiscordBot = bot
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def set_stats_channel(self, ctx, *, text: str = None):
+        message_info = {"-m": "основной", "-t": "тестовый"}
+        channel_name = message_info.get(text)
+        if not channel_name or text is None:
+            await ctx.send("Указан неверный аргумент для отправки статистики,"
+                           " укажите -m (основной) или -t (тестовый)")
+            return
+
+        MessageChannel.set_stats_channel(text)
+
+        await ctx.send(f"Отправка ежедневной статистики сервера на {channel_name} канал")
 
     @commands.command()
     async def stats(self, ctx, *, text=None):
