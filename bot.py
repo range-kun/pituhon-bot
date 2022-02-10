@@ -269,7 +269,7 @@ async def f(ctx):
     text = await resp.text()
     soup = BeautifulSoup(text, "lxml")
     fact = soup.find("table", class_="text").find('td').text
-    return await ctx.send(f"Интересный факт для {member_name}: \n {fact}")
+    return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
 
 
 schedule.every().day.at("23:00").do(UserStats.daily_routine)
