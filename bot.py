@@ -3,6 +3,8 @@ import itertools
 import re
 import urllib.parse
 
+import aiohttp
+from bs4 import BeautifulSoup
 import discord
 from discord.ext import commands
 import aioschedule as schedule
@@ -252,6 +254,22 @@ async def unmute(ctx, member: discord.Member):
         await member.remove_roles(mute_role)
         await ctx.send('{} отмьючен'.format(member.mention))
         return
+
+
+@bot.command()
+async def f(ctx):
+    member_name = ctx.author.name
+
+    async with aiohttp.ClientSession() as session:
+        resp = await session.get('https://randstuff.ru/fact/')
+    if resp.status != 200:
+        await ctx.send('Ошибка на стороне сервера повторите попытку позже')
+        return
+
+    text = await resp.text()
+    soup = BeautifulSoup(text, "lxml")
+    fact = soup.find("table", class_="text").find('td').text
+    return await ctx.send(f"Интересный факт для {member_name}: \n {fact}")
 
 
 schedule.every().day.at("23:00").do(UserStats.daily_routine)
