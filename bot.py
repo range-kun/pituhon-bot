@@ -1,30 +1,31 @@
 import asyncio
 import itertools
+import random
 import re
 import urllib.parse
 
 import aiohttp
-from bs4 import BeautifulSoup
-import discord
-from discord.ext import commands
 import aioschedule as schedule
+import discord
 import yaml
+from bs4 import BeautifulSoup
+from discord.ext import commands
 
-from configuration import TOKEN
-from utils.data.phrase import PhraseData
-from utils.data.history_record import HistoryRecord
-from cogs.message_stats import MessageStats
 from cogs.google_search import Google
+from cogs.message_stats import MessageStats
+from cogs.poll import Poll, PollMessageTrack
 from cogs.translate import Translate
 from cogs.voice_message import VoiceMessage
-from cogs.poll import Poll, PollMessageTrack
+from configuration import TOKEN, UMBRA_ID, MAIN_CHANNEL_ID
 from utils import today, send_yaml_text
+from utils.data.history_record import HistoryRecord
+from utils.data.phrase import PhraseData
 from utils.message_stats_routine import MessageDayCounter as MDC
-from utils.message_stats_routine.user_stats_routine import UserStats
 from utils.message_stats_routine.chanel_stats_routine import ChanelStats
+from utils.message_stats_routine.user_stats_routine import UserStats
 
 CAPS = 0
-CAPS_INFO = itertools.cycle({0: 'Caps allowed', 1: 'Caps not allowed'})
+NAHOOJ = 0
 PREFIX = '?'  # command_prefix
 
 HELLO_WORDS = ['ky', 'ку']
@@ -54,9 +55,25 @@ async def on_command_error(ctx, error):
 
 @bot.event
 async def on_message(message):
-    await bot.process_commands(message)
+    print()
     MDC.proceed_message_info(message)
     msg_text = message.content.lower()
+
+    nahoj_messages = [
+        "Нахуй иди",
+        "Съебался",
+        f"Выполняю обработку команды {msg_text}, а нет не выполняю, иди нахуй, черт",
+        "У меня перерыв 15 минут прошу простить",
+        "Докажите что вы человек чтобы воспользоватья ботом",
+        msg_text * 3
+    ]
+    if NAHOOJ and message.author.id == UMBRA_ID and message.channel.id == MAIN_CHANNEL_ID:
+        if msg_text.startswith(PREFIX):
+            nahooj_message = random.choice(nahoj_messages)
+            await message.channel.send(nahooj_message)
+            return
+
+    await bot.process_commands(message)
 
     url_check = re.search(r'^(?:https?:\/\/)?(?:w{3}\.)?', msg_text)
     if url_check and message.content != urllib.parse.unquote(message.content):
@@ -144,11 +161,21 @@ async def rec(ctx, text=None, *, num=None):
 
 # forbid to use CAPSLOCK
 @bot.command(pass_context=True)
+@commands.has_permissions(administrator=True)
 async def caps(ctx):
     global CAPS
     CAPS = 0 if CAPS else 1
     caps_info = {0: 'Caps allowed', 1: 'Caps not allowed'}
     await ctx.send(caps_info[CAPS])
+
+
+@bot.command(pass_context=True)
+@commands.has_permissions(administrator=True)
+async def nah(ctx):
+    global NAHOOJ
+    NAHOOJ = 0 if NAHOOJ else 1
+    nahhoj_info = {0: "Ne nahooj", 1: "Nahooy"}
+    await ctx.send(nahhoj_info[NAHOOJ])
 
 
 # clear

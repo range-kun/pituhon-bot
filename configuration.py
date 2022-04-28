@@ -11,6 +11,7 @@ MAIN_CHANNEL_ID = 873248515042738176
 VOTE_TIME = 60  # minutes
 REDIS_HOST = "redis-17886.c293.eu-central-1-1.ec2.cloud.redislabs.com"
 REDIS_PORT = 17886
+UMBRA_ID = 439474652079718410
 
 try:
     with open('config.yaml', 'r') as my_file:
