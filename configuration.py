@@ -1,8 +1,8 @@
 import os
 import yaml
 
-DB_NAME = "d3lg89is3baabv"
-DB_HOST = "ec2-52-211-144-45.eu-west-1.compute.amazonaws.com"
+DB_NAME = "d1d79slc0v9cp5"
+DB_HOST = "ec2-18-200-55-205.eu-west-1.compute.amazonaws.com"
 MAX_HIST_RETRIEVE_RECORDS = 10
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
 PYTHON_BOT_ID = 698973448772386927
