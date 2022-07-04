@@ -288,11 +288,11 @@ async def f(ctx):
 
     async with aiohttp.ClientSession() as session:
         resp = await session.get('https://randstuff.ru/fact/')
-    if resp.status != 200:
-        await ctx.send('Ошибка на стороне сервера повторите попытку позже')
-        return
-
-    text = await resp.text()
+        if resp.status != 200:
+            await ctx.send('Ошибка на стороне сервера повторите попытку позже')
+            return
+        text = await resp.text()
+        
     soup = BeautifulSoup(text, "lxml")
     fact = soup.find("table", class_="text").find('td').text
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
