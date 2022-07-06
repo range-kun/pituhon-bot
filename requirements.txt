@@ -2,7 +2,7 @@ discord.py
 aiohttp==3.7.4
 asyncio==3.4.3
 urllib3==1.26.5
-lxml==4.6.5
+lxml==4.9.1
 SQLAlchemy==1.4.27
 pyyaml==6.0
 googletrans==3.1.0a0
@@ -12,4 +12,4 @@ gTTS==2.2.3
 psycopg2==2.9.3
 redis==4.1.2
 beautifulsoup4==4.10.0
-lxml==4.6.5
+lxml==4.9.1
