@@ -13,7 +13,7 @@ class MaxServerMessagesForPeriod(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "max_server_messages_for_period",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("period", sa.VARCHAR),
             sa.Column("date", sa.DATE),
             sa.Column("amount", sa.INTEGER)
@@ -26,7 +26,7 @@ class MaxServerSymbolsForPeriod(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "max_server_symbols_for_period",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("period", sa.VARCHAR),
             sa.Column("date", sa.DATE),
             sa.Column("amount", sa.INTEGER)

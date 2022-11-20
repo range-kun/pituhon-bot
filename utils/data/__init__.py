@@ -7,10 +7,14 @@ from sqlalchemy.engine.cursor import LegacyCursorResult
 
 from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
+metadata = sa.MetaData()
+
 
 class Data:
+
     table: Optional[sa.Table] = None
     db: Optional[sa.engine.Engine] = None
+    metadata = metadata
 
     @classmethod
     def get_table(cls) -> sa.Table:

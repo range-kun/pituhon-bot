@@ -9,7 +9,7 @@ class PhraseData(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "phrase",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.Integer, primary_key=True),
             sa.Column("author", sa.TEXT),
             sa.Column("text", sa.TEXT)

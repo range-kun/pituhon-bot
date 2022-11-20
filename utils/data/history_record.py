@@ -16,7 +16,7 @@ class HistoryRecord(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "history_record",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("date", sa.DATE),
             sa.Column("log", sa.TEXT)

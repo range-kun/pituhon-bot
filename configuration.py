@@ -18,8 +18,8 @@ SEARCH_ENGINE_ID = config('SEARCH_ENGINE_ID')
 # DB
 DB_USER = config('DB_USER')
 DB_PASSWORD = config('DB_PASSWORD')
-DB_NAME = config('DB_NAME')
-DB_HOST = "ec2-18-200-55-205.eu-west-1.compute.amazonaws.com"
+DB_NAME = config('DB_LOCAL_NAME')
+DB_HOST = config('DB_HOST', default='0.0.0.0')
 
 
 # Redis

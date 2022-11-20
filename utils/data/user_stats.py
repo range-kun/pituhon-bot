@@ -17,7 +17,7 @@ class UserOverallStats(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_overall_stats",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("user_id", sa.BIGINT, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER)
@@ -53,7 +53,7 @@ class UserStatsForCurrentWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_stats_for_current_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER),
@@ -67,7 +67,7 @@ class UserStatsForCurrentMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_stats_for_current_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER),
@@ -81,7 +81,7 @@ class UserMaxMessagesForDay(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_day",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -95,7 +95,7 @@ class UserMaxSymbolsForDay(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_day",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -109,7 +109,7 @@ class UserMaxMessagesForWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -123,7 +123,7 @@ class UserMaxSymbolsForWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -137,7 +137,7 @@ class UserMaxMessagesForMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -151,7 +151,7 @@ class UserMaxSymbolsForMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),

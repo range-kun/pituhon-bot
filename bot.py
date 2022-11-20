@@ -32,8 +32,7 @@ ANSWER_WORDS = ['узнать информацию о себе', 'какая и�
                 'команды', 'команды сервера', 'что здесь делать']
 GOODBYE_WORDS = ['бб', 'bb', 'лан я пошел', 'я спать']
 
-intents = discord.Intents().default()
-intents.members = True
+intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 bot.remove_command('help')
 
@@ -321,11 +320,11 @@ async def my_schedule():
 async def on_ready():
     ChanelStats.set_bot(bot)
     bot.loop.create_task(my_schedule())
-    bot.add_cog(Google(bot))
-    bot.add_cog(Translate(bot))
-    bot.add_cog(MessageStats(bot))
-    bot.add_cog(Poll(bot))
-    bot.add_cog(VoiceMessage(bot))
+    await bot.add_cog(Google(bot))
+    await bot.add_cog(Translate(bot))
+    await bot.add_cog(MessageStats(bot))
+    await bot.add_cog(Poll(bot))
+    await bot.add_cog(VoiceMessage(bot))
     print('Bot connected')
 
 bot.run(TOKEN)
