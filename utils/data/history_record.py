@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Union, Optional
 import re
+from typing import Union
 
 import sqlalchemy as sa
+from sqlalchemy.engine import Row
 from sqlalchemy.sql import extract
 
 from configuration import MAX_HIST_RETRIEVE_RECORDS
@@ -24,15 +25,15 @@ class HistoryRecord(Data):
 
     @classmethod
     def parse_date(cls, text: str):
-        date = re.match(r'((?:\d{2}-)?(?:\d{2}-)?\d{4})', text)
+        date = re.match(r"((?:\d{2}-)?(?:\d{2}-)?\d{4})", text)
         if not date:
             return
-        return [int(i) for i in date[1].split('-')[::-1]]
+        return [int(i) for i in date[1].split("-")[::-1]]
 
     @classmethod
     def format_condition(cls, date):
         if len(date) == 3:  # full date
-            date = '-'.join(str(i) for i in date)
+            date = "-".join(str(i) for i in date)
             return cls.get_table().c.date == date
 
         date_field = cls.get_table().c["date"]
@@ -45,28 +46,24 @@ class HistoryRecord(Data):
             return extract("year", date_field) == year
 
     @classmethod
-    def get_record(cls, text: str = None, offset: Optional[str] = None) -> Union[list, str]:
-        if not text:
-            record = cls.get_random_record()
-            return record
+    def get_record(cls, date: str = None, offset: int | None = None) -> Union[list, str]:
+        if not date:
+            return cls.get_random_record()
 
-        date = cls.parse_date(text)
+        date = cls.parse_date(date)
         limit = None
         if offset:
-            if offset.isdigit():
-                offset = max(0, int(offset) - 1)
-                limit = MAX_HIST_RETRIEVE_RECORDS
-            else:
-                return "Пожалуйста укажите номер записи в числовом виде: -> rec 2021 5"
-
+            offset = max(0, offset)
+            limit = MAX_HIST_RETRIEVE_RECORDS
         try:
-            result = cls.get_data("date",
-                                  "log",
-                                  limit=limit,
-                                  offset=offset,
-                                  condition=(cls.format_condition(date)),
-                                  order=cls.table.c.date
-                                  )
+            result = cls.get_data(
+                "date",
+                "log",
+                limit=limit,
+                offset=offset,
+                condition=(cls.format_condition(date)),
+                order=cls.table.c.date
+            )
         except Exception as e:
             print(e)
             return "Извините произошла ошибка при попытке достать фразу"
@@ -79,10 +76,10 @@ class HistoryRecord(Data):
         return result or "На указанную дату записей не найдено"
 
     @classmethod
-    def get_random_record(cls) -> str:
+    def get_random_record(cls) -> list[Row] | str:
         try:
             record = cls.get_data("date", "log", limit=1, order=sa.func.random()).fetchall()
         except Exception as e:
             print(e)
-            return 'Извините не удалось получить фразу'
+            return "Извините не удалось получить фразу"
         return record

@@ -57,7 +57,7 @@ class MessageDayCounter:
         cls.redis_connection.set("messages", cls.messages)
         cls.redis_connection.set("symbols", cls.symbols)
         authors = json.dumps(cls.authors, cls=EnhancedJSONEncoder)
-        cls.redis_connection.json().set('authors', Path.rootPath(), authors)
+        cls.redis_connection.json().set("authors", Path.rootPath(), authors)
 
     @classmethod
     async def set_stats_to_zero(cls):
@@ -81,7 +81,7 @@ class MessageDayCounter:
     @property
     def authors(cls) -> dict[int: UserStatsForCurrentDay]:
         try:
-            redis_authors = json.loads(cls.redis_connection.json().get('authors'))
+            redis_authors = json.loads(cls.redis_connection.json().get("authors"))
         except TypeError:
             redis_authors = {}
 
@@ -103,13 +103,13 @@ class MessageDayCounter:
         msg = message.content.lower()
 
         cls._messages += 1
-        sticker_regex = re.compile(r'<:\w+:\d+>')
+        sticker_regex = re.compile(r"<:\w+:\d+>")
         if sticker_regex.search(msg):
             number_of_symbols_in_string = 1
             cls._symbols += 1
         else:
-            number_of_symbols_in_string = len(msg.replace(' ', ''))
-            cls._symbols += len(msg.replace(' ', ''))
+            number_of_symbols_in_string = len(msg.replace(" ", ""))
+            cls._symbols += len(msg.replace(" ", ""))
 
         user_stats = cls._authors.get(message.author.id, UserStatsForCurrentDay())
         user_stats.amount_of_messages = user_stats.amount_of_messages + 1

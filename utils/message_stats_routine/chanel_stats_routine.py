@@ -143,17 +143,17 @@ class ChanelStats(Statistic):
         user_name_with_most_symbols = await cls.bot.fetch_user(user_with_most_symbols)
         user_name_with_most_symbols = user_name_with_most_symbols.name
 
-        channel_info = f'Кол-во сообщений  =>{amount_of_all_messages}\n' \
-                       f'Кол-во символов  =>{amount_of_all_symbols}'
-        message_info = f'Чемпион по сообщениям => {user_name_with_most_messages}\n' \
-                       f'Количество=>{amount_of_messages_top_user}'
-        symbol_info = f'Чемпион по символам =>{user_name_with_most_symbols} \n' \
-                      f'Количество => {amount_of_symbols_top_user}'
+        channel_info = f"Кол-во сообщений  =>{amount_of_all_messages}\n" \
+                       f"Кол-во символов  =>{amount_of_all_symbols}"
+        message_info = f"Чемпион по сообщениям => {user_name_with_most_messages}\n" \
+                       f"Количество=>{amount_of_messages_top_user}"
+        symbol_info = f"Чемпион по символам =>{user_name_with_most_symbols} \n" \
+                      f"Количество => {amount_of_symbols_top_user}"
         info_dict = {
-            f'Всего за {name_of_period}': '=' * 25,
-            channel_info: '=' * 25,
-            message_info: '=' * 25,
-            symbol_info: '=' * 25
+            f"Всего за {name_of_period}": "=" * 25,
+            channel_info: "=" * 25,
+            message_info: "=" * 25,
+            symbol_info: "=" * 25
         }
 
         emb = discord.Embed(title=description_of_period, colour=discord.Color.dark_blue())

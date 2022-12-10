@@ -1,11 +1,24 @@
+from __future__ import annotations
+
 from typing import Optional
 
 import discord
+from discord import app_commands
+from discord.app_commands import Choice
 from discord.ext import commands
 from googletrans import Translator, LANGUAGES
 
 
-from configuration import DEFAULT_TRANSLATE_LANGUAGE
+from configuration import DEFAULT_TRANSLATE_LANGUAGE, MY_GUILD
+
+LANGUAGES_NAMES = {
+    "Английский": "en", "Арабский": "ar", "Вьетнамский": "vi", "Голландский": "nl", "Греческий": "el",
+    "Индонезийский": "id", "Итальянский": "it", "Казахский": "kk", "Китайский": "zh-cn", "Корейский": "ko",
+    "Латинский": "la", "Немецкий": "de", "Персидский": "fa", "Польский": "pl", "Португальский": "pt",
+    "Русский": "ru", "Суахили": "sw", "Тай": "th", "Турецкий": "tr", "Украинский": "uk", "Финский": "fi",
+    "Французский": "fr", "Хинду": "hi", "Чешский": "cs", "Японский": "ja"
+}
+CHOICES = [app_commands.Choice(name=key, value=value) for key, value in LANGUAGES_NAMES.items()]
 
 
 class Translate(commands.Cog):
@@ -19,14 +32,17 @@ class Translate(commands.Cog):
         return cls.translator.detect(msg).lang
 
     @staticmethod
-    def parse_user_desired_language(to_language: str) -> Optional[str]:
-        to_language = to_language.lower()
+    def parse_user_desired_language(autocomplete_lang: Choice, extra_lang: str) -> Optional[str]:
+        if autocomplete_lang:
+            return autocomplete_lang.value
+
+        to_language = extra_lang.lower()
         if to_language in ["rus", "ru"]:
-            to_language = 'russian'
+            to_language = "russian"
         elif to_language in ["eng", "en"]:
-            to_language = 'english'
-        elif to_language == 'ukr':
-            to_language = 'ukrainian'
+            to_language = "english"
+        elif to_language == "ukr":
+            to_language = "ukrainian"
         else:
             to_language = LANGUAGES.get(to_language)
 
@@ -43,40 +59,57 @@ class Translate(commands.Cog):
                             )
         return embed
 
-    @commands.command()
-    async def trans(self, ctx, *, msg: str):
-        """Translates words from one language to another. Do [p]cmds for more information.
-        Usage:
-        [p]trans [lang::] <words> - Translate words from one language to another.
-        Short language name must be used.
-        The original language will be assumed automatically.
-        """
-        to_language = None
-        if msg.split()[0].endswith("::"):
-            required_language = msg.split("::")[0]
-            msg = msg[len(required_language) + 2:].strip()
-            to_language = self.parse_user_desired_language(required_language)
-            if to_language is None:
-                await ctx.send(f"Указанный язык {required_language} не найден,"
-                               f" использую {DEFAULT_TRANSLATE_LANGUAGE} в качестве языка для перевода.")
-                to_language = DEFAULT_TRANSLATE_LANGUAGE
+    @app_commands.command(name="trans", description="Перевести фразу, по-умолчанию русско - английская пара.")
+    @app_commands.guilds(MY_GUILD)
+    @app_commands.describe(
+        autocomplete_lang="Самые популярные языки, на которые необходимо перевести",
+        any_lang="Вручную ввести язык перевода, если нету нужного в autocomplete_lang (названия смотреть в /cmds)",
+        text="Текст для перевода."
+    )
+    @app_commands.choices(autocomplete_lang=CHOICES)
+    async def trans(
+            self,
+            interaction: discord.Interaction,
+            autocomplete_lang: Choice[str] | None = None,
+            any_lang: str | None = None,
+            *, text: str
+    ):
+        if any_lang and autocomplete_lang:
+            await interaction.response.send_message(
+                f"Указано одновременно два параметра autocomplete_lang и extra_lang, "
+                f"пожалуйста выберите только один параметр."
+            )
+            return
 
-        original_language = LANGUAGES.get(self.determinate_language(msg))
-        if not to_language and\
-                not original_language == DEFAULT_TRANSLATE_LANGUAGE:
+        message_language = LANGUAGES.get(self.determinate_language(text))
+        to_language = self.parse_user_desired_language(autocomplete_lang, any_lang)
+
+        if to_language is None and any_lang:
+            language_response = \
+                [DEFAULT_TRANSLATE_LANGUAGE, "english"][message_language == DEFAULT_TRANSLATE_LANGUAGE]
+            await interaction.channel.send(
+                f"Указанный язык {any_lang} не найден, "
+                f"использую {language_response} в качестве языка для перевода."
+                )
+
+        if not to_language and not message_language == DEFAULT_TRANSLATE_LANGUAGE:
             to_language = DEFAULT_TRANSLATE_LANGUAGE
 
         try:
             if to_language:
-                result = self.translator.translate(msg, dest=to_language)
+                result = self.translator.translate(text, dest=to_language)
             else:
-                result = self.translator.translate(msg)
+                result = self.translator.translate(text)
         except Exception as e:
             print(e)
-            await ctx.send("Произошла ошибка при переводе текста.")
+            await interaction.channel.send("Произошла ошибка при переводе текста.")
             return
 
         translated_text, translated_language = result.text.capitalize(), LANGUAGES[result.dest]
-        output_embed = self.create_output(translated_text, msg, translated_language, original_language)
+        output_embed = self.create_output(translated_text, text, translated_language, message_language)
 
-        await ctx.send(embed=output_embed)
+        await interaction.response.send_message(embed=output_embed)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Translate(bot), guild=MY_GUILD)

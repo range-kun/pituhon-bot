@@ -15,8 +15,13 @@ class UserOverallStats(Data):
 
     @classmethod
     def create_table(cls) -> sa.Table:
+        table_name = "user_overall_stats"
+        table = cls.metadata.tables.get(table_name)
+
+        if table is not None:
+            return table
         return sa.Table(
-            "user_overall_stats",
+            table_name,
             cls.metadata,
             sa.Column("user_id", sa.BIGINT, primary_key=True),
             sa.Column("messages", sa.INTEGER),
@@ -184,7 +189,7 @@ class UserCurrentStats(Data):
                 messages = user.amount_of_messages \
                            + users_dict_db_data[user_id].amount_of_messages
                 symbols = user.amount_of_symbols \
-                          + users_dict_db_data[user_id].amount_of_symbols
+                           + users_dict_db_data[user_id].amount_of_symbols
                 user_stats_class.update(
                     connection=connection,
                     condition=(user_stats_class.get_table().c.user_id == user_id),
