@@ -4,15 +4,15 @@ from datetime import datetime, timedelta
 from typing import Optional, NamedTuple
 
 import discord
-from discord import User, app_commands, errors
+from discord import User, app_commands
 from discord.channel import TextChannel
 from discord.embeds import Embed
 from discord.ext import commands
 from discord.message import Message as DiscordMessage
 from discord.reaction import Reaction
 
-from configuration import VOTE_TIME, MY_GUILD
-from utils import fetch_all_channel_users
+from app.configuration import VOTE_TIME, MY_GUILD
+from app.utils import fetch_all_channel_users
 
 
 class Poll(commands.Cog):
@@ -143,8 +143,8 @@ class PollMessageTrack:
         while (current_moment := datetime.now()) < finish_poll_time:
             users_already_voted = len(self.poll_user_stats[poll_message_id].keys())
             if users_already_voted >= amount_of_voters:
-                print(users_already_voted, amount_of_voters)
                 break
+
             if current_moment > first_time_task and time_tasks == 2:
                 time_tasks = 1
                 description = f"До конца [голосования]({poll_message_url}) " \

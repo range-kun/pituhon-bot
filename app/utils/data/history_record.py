@@ -7,8 +7,9 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Row
 from sqlalchemy.sql import extract
 
-from configuration import MAX_HIST_RETRIEVE_RECORDS
-from utils.data import Data
+from app.configuration import MAX_HIST_RETRIEVE_RECORDS
+from app.utils.data import Data
+from app.log import logger
 
 
 class HistoryRecord(Data):
@@ -65,7 +66,9 @@ class HistoryRecord(Data):
                 order=cls.table.c.date
             )
         except Exception as e:
-            print(e)
+            logger.opt(exception=True).error(
+                f"Exception occurred {str(e)} while fetching data from Data Base"
+            )
             return "Извините произошла ошибка при попытке достать фразу"
 
         result = result.fetchall()
@@ -80,6 +83,8 @@ class HistoryRecord(Data):
         try:
             record = cls.get_data("date", "log", limit=1, order=sa.func.random()).fetchall()
         except Exception as e:
-            print(e)
+            logger.opt(exception=True).error(
+                f"Exception occurred {str(e)} while fetching data from Data Base"
+            )
             return "Извините не удалось получить фразу"
         return record

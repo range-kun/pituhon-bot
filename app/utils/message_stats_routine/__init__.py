@@ -8,8 +8,8 @@ import re
 import redis
 from redis.commands.json.path import Path
 
-from configuration import REDIS_PORT, REDIS_HOST, REDIS_PASSWORD
-from utils import catch_exception
+from app.configuration import REDIS_PORT, REDIS_HOST, REDIS_PASSWORD
+from app.utils import catch_exception
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):

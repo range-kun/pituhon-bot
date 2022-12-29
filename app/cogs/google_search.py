@@ -10,7 +10,7 @@ import discord
 from discord import app_commands, errors
 from discord.ext import commands
 
-from configuration import API_KEY, MAIN_CHANNEL_ID, SEARCH_ENGINE_ID, MY_GUILD
+from app.configuration import API_KEY, MAIN_CHANNEL_ID, SEARCH_ENGINE_ID, MY_GUILD
 
 
 class Google(commands.Cog):

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 
 import discord
 from discord import app_commands
@@ -10,11 +9,11 @@ from discord.ext import commands
 from discord.ext.commands.bot import Bot as DiscordBot
 from tabulate import tabulate
 
-from configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID, MY_GUILD
-from utils.data import Data
-from utils.message_stats_routine import MessageDayCounter as MDC
-from utils.data.channel_stats import ServerStats
-from utils.data.user_stats import UserCurrentStats, UserMaxStats, UserOverallStats
+from app.configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID, MY_GUILD
+from app.utils.data import Data
+from app.utils.message_stats_routine import MessageDayCounter as MDC
+from app.utils.data.channel_stats import ServerStats
+from app.utils.data.user_stats import UserCurrentStats, UserMaxStats, UserOverallStats
 
 
 class MessageChannel:
@@ -248,8 +247,8 @@ class MessageStructure:
 
                 try:
                     _, record_date, amount = list(channel_stats)[0]
-                except IndexError:
-                    return "Статистика рекордов не была обноружена, попробуйте позже."
+                except ValueError:
+                    return "Статистика рекордов не была обнаружена, попробуйте позже."
 
                 record_date = cls.format_record_date(is_month=period == "month", record_date=record_date)
 

@@ -6,8 +6,8 @@ import gtts
 from discord import app_commands, errors
 from discord.ext import commands
 
-from configuration import MY_GUILD
-from cogs.translate import Translate
+from app.configuration import MY_GUILD
+from app.cogs.translate import Translate
 
 
 class VoiceMessage(commands.Cog):

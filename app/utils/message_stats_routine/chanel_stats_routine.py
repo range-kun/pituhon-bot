@@ -1,11 +1,10 @@
 import discord
 
-from configuration import TEST_CHANNEL_ID
-from utils import is_last_month_day, catch_exception
-from utils.data.channel_stats import ServerStats
-
-from cogs.message_stats import MessageChannel
-from utils.message_stats_routine import Statistic, MessageDayCounter as MDC
+from app.cogs.message_stats import MessageChannel
+from app.utils import is_last_month_day, catch_exception
+from app.utils.data.channel_stats import ServerStats
+from app.utils.message_stats_routine import Statistic, MessageDayCounter as MDC
+from app.configuration import TEST_CHANNEL_ID
 
 
 class ChanelStats(Statistic):
@@ -164,6 +163,5 @@ class ChanelStats(Statistic):
     @classmethod
     def channel(cls):
         channel_id = MessageChannel.get_stats_channel()
-        print(channel_id)
         channel = cls.bot.get_channel(channel_id)
         return channel

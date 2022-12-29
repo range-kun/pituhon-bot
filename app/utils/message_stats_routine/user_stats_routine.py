@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Optional
 
 
-from utils import is_last_month_day, catch_exception
-from utils.message_stats_routine import UserStatsForCurrentDay, Statistic, MessageDayCounter as MDC
-from utils.data.user_stats import UserOverallStats, UserStatsForCurrentWeek, UserStatsForCurrentMonth, \
+from app.utils import is_last_month_day, catch_exception
+from app.utils.message_stats_routine import UserStatsForCurrentDay, Statistic, MessageDayCounter as MDC
+from app.utils.data.user_stats import UserOverallStats, UserStatsForCurrentWeek, UserStatsForCurrentMonth, \
     UserMaxStats, UserCurrentStats
 
 

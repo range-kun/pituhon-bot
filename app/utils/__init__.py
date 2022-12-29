@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 from discord.channel import TextChannel
 
 
+from app.log import logger
+
+
 def is_last_month_day():
     this_day = datetime.now()
     last_month_day = calendar.monthrange(this_day.year, this_day.month)[1]
@@ -33,7 +36,7 @@ def catch_exception(method):
         try:
             result = await method(cls, *args, **kwargs)
         except Exception as e:
-            print(f"Поймано исключение в методе {method.__qualname__}: " + str(e))
+            logger.opt(exception=True).error(f"Exception was caught in {method.__qualname__}: " + str(e))
         else:
             return result
     return wrapper

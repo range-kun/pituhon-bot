@@ -6,9 +6,9 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm.session import Session
 
-from utils.data import Data
-from utils import today
-from utils.message_stats_routine import UserStatsForCurrentDay
+from app.utils.data import Data
+from app.utils import today
+from app.utils.message_stats_routine import UserStatsForCurrentDay
 
 
 class UserOverallStats(Data):

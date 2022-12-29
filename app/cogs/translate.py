@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 from googletrans import Translator, LANGUAGES
 
-
-from configuration import DEFAULT_TRANSLATE_LANGUAGE, MY_GUILD
+from app.configuration import DEFAULT_TRANSLATE_LANGUAGE, MY_GUILD
+from app.log import logger
 
 LANGUAGES_NAMES = {
     "Английский": "en", "Арабский": "ar", "Вьетнамский": "vi", "Голландский": "nl", "Греческий": "el",
@@ -32,9 +30,11 @@ class Translate(commands.Cog):
         return cls.translator.detect(msg).lang
 
     @staticmethod
-    def parse_user_desired_language(autocomplete_lang: Choice, extra_lang: str) -> Optional[str]:
+    def parse_user_desired_language(autocomplete_lang: Choice, extra_lang: str) -> str | None:
         if autocomplete_lang:
             return autocomplete_lang.value
+        if not extra_lang:
+            return None
 
         to_language = extra_lang.lower()
         if to_language in ["rus", "ru"]:
@@ -101,7 +101,10 @@ class Translate(commands.Cog):
             else:
                 result = self.translator.translate(text)
         except Exception as e:
-            print(e)
+
+            logger.opt(exception=True).error(
+                f"Exception occurred {str(e)} while translating: \n {text} to {to_language or 'english'}"
+            )
             await interaction.channel.send("Произошла ошибка при переводе текста.")
             return
 

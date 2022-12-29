@@ -3,8 +3,9 @@ from typing import Type
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
-from utils.data import Data
-from utils.data.user_stats import UserStatsForCurrentWeek, UserStatsForCurrentMonth, UserMaxStats
+from app.log import logger
+from app.utils.data import Data
+from app.utils.data.user_stats import UserStatsForCurrentWeek, UserStatsForCurrentMonth, UserMaxStats
 
 
 class MaxServerMessagesForPeriod(Data):
@@ -45,7 +46,9 @@ class ServerStats(Data):
             max_amount_messages_for_period = cls.get_max_stats_for_period(period, MaxServerMessagesForPeriod)[0]
             max_amount_symbols_for_period = cls.get_max_stats_for_period(period, MaxServerSymbolsForPeriod)[0]
         except Exception as e:
-            print(e)
+            logger.opt(exception=True).error(
+                f"Exception occurred {str(e)} while fetching data from Redis"
+            )
             return "Извините произошла ошибка при попытке получить данных о сервере"
 
         if current_amount_of_messages > max_amount_messages_for_period:

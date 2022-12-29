@@ -16,8 +16,11 @@ services:
       context: .
     depends_on:
       - data_base
-    command: python /app/bot.py
+    command: ["python", "-m", "app.app"]
     environment:
       DB_HOST: discord_db_container
+      LOGGER_OUTPUT: container
+    volumes:
+      - /home/discord/logs:/app/logs
 volumes:
   discord_db_volume:

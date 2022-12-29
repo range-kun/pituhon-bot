@@ -3,7 +3,8 @@ from __future__ import annotations
 import sqlalchemy as sa
 from sqlalchemy.engine import Row
 
-from utils.data import Data
+from app.log import logger
+from app.utils.data import Data
 
 
 class PhraseData(Data):
@@ -19,10 +20,10 @@ class PhraseData(Data):
         )
 
     @classmethod
-    def get_random_phrase(cls) -> str | list[Row]:
+    def get_random_phrase(cls) -> str | Row:
         try:
             phrase = cls.get_data("author", "text", limit=1, order=sa.func.random()).fetchone()
         except Exception as e:
-            print(e)
+            logger.opt(exception=True).error(f"Error while getting data from database {str(e)}")
             return "Извините не удалось получить фразу"
         return phrase

@@ -1,4 +1,3 @@
-import sys
 from logging.config import fileConfig
 
 from sqlalchemy.exc import InvalidRequestError
@@ -7,14 +6,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
-import utils.data
-from utils.data.channel_stats import *  # import this so Data class could properly show all subclasses
-from utils.data.history_record import *
-from utils.data.phrase import *
-from utils.data import Data
-
-
-import configuration as conf_data
+from app import utils, configuration as conf_data
+from app.log import logger
+from app.utils.data import Data
 
 for klass in Data.__subclasses__():
     try:
@@ -83,7 +77,7 @@ def run_migrations_online() -> None:
             script = directives[0]
             if script.upgrade_ops.is_empty():
                 directives[:] = []
-                print('No changes in schema detected.')
+                logger.info('No changes in schema detected.')
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
