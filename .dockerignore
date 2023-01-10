@@ -1,3 +1,8 @@
 /Screenshot_1.png
 /.env-template
 /README.md
+/venv
+/.gitignore
+.git
+.idea
+.dockerignore

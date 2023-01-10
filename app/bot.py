@@ -246,7 +246,7 @@ async def f(ctx):
     member_name = ctx.author.name
 
     async with aiohttp.ClientSession() as session:
-        site = "https://randstuff.ru/fac/"
+        site = "https://randstuff.ru/fact/"
         resp = await session.get(site)
         if resp.status != 200:
             logger.error(f"{resp.status} error while  sending a request to {site}")

@@ -6,8 +6,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app import utils, configuration as conf_data
+from app import configuration as conf_data
 from app.log import logger
+
 from app.utils.data import Data
 
 for klass in Data.__subclasses__():
@@ -32,7 +33,9 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = utils.data.metadata
+from app.utils.data import metadata
+target_metadata = metadata
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

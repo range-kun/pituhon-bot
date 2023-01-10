@@ -1,3 +1,5 @@
+import os
+
 from decouple import config
 import discord
 
@@ -24,7 +26,12 @@ SEARCH_ENGINE_ID = config("SEARCH_ENGINE_ID")
 DB_USER = config("DB_USER")
 DB_PASSWORD = config("DB_PASSWORD")
 DB_NAME = config("DB_LOCAL_NAME")
-DB_HOST = config("DB_HOST", default="0.0.0.0")
+
+if os.name == "nt":
+    default_host = "localhost"
+else:
+    default_host = "0.0.0.0"
+DB_HOST = config("DB_HOST", default=default_host)
 
 
 # Redis
