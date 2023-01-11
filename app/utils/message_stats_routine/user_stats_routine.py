@@ -1,60 +1,68 @@
 from __future__ import annotations
 
-from typing import Optional
+from datetime import datetime, time
 
+from discord.ext import tasks
 
-from app.utils import is_last_month_day, catch_exception
-from app.utils.message_stats_routine import UserStatsForCurrentDay, Statistic, MessageDayCounter as MDC
+from app.log import logger
+from app.utils import is_last_month_day, is_sunday, catch_exception
+from app.utils.message_stats_routine import UserStatsForCurrentDay, message_day_counter
 from app.utils.data.user_stats import UserOverallStats, UserStatsForCurrentWeek, UserStatsForCurrentMonth, \
     UserMaxStats, UserCurrentStats
 
 
-class UserStats(Statistic):
+class UserStats:
+    tz = datetime.now().astimezone().tzinfo
+    daily_time = time(hour=23, tzinfo=tz)
+    weekly_time = time(hour=23, minute=3, tzinfo=tz)
+    monthly_time = time(hour=23, minute=6, tzinfo=tz)
 
-    @classmethod
+    @tasks.loop(time=daily_time)
     @catch_exception
-    async def daily_routine(cls):
-        cls.update_users_stats_by_end_of_day()
-        cls.update_user_max_stats_for_period("day")
+    async def daily_routine(self):
+        self.update_users_stats_by_end_of_day()
+        self.update_user_max_stats_for_period("day")
+        logger.info("Successfully updated user daily stats")
 
-    @classmethod
+    @tasks.loop(time=weekly_time)
     @catch_exception
-    async def weekly_routine(cls):
-        cls.update_user_max_stats_for_period("week")
+    async def weekly_routine(self):
+        # if not is_sunday():
+        #     return
+        self.update_user_max_stats_for_period("week")
+        logger.info("Successfully updated user weekly stats")
 
-    @classmethod
+    @tasks.loop(time=monthly_time)
     @catch_exception
-    async def monthly_routine(cls):
-        if not is_last_month_day():
-            return
-        cls.update_user_max_stats_for_period("month")
+    async def monthly_routine(self):
+        # if not is_last_month_day():
+        #     return
+        self.update_user_max_stats_for_period("month")
+        logger.info("Successfully updated user month stats")
 
-    @classmethod
-    def update_users_stats_by_end_of_day(cls):
+    @staticmethod
+    def update_users_stats_by_end_of_day():
         with UserMaxStats.begin() as connect:
             for user_stats_class in [UserOverallStats, UserStatsForCurrentWeek, UserStatsForCurrentMonth]:
-                UserCurrentStats.add_or_update_user_stats(MDC.authors, user_stats_class, connect)
+                UserCurrentStats.add_or_update_user_stats(message_day_counter.authors, user_stats_class, connect)
 
-    @classmethod
-    def update_user_max_stats_for_period(cls, period: str):
-        users_new_data = cls.get_current_users_stats(period)
+    def update_user_max_stats_for_period(self, period: str):
+        users_new_data = self.get_current_users_stats(period)
         if not users_new_data:
             return
 
         messages_info, symbols_info = UserMaxStats.get_all_users_max_stats(period)
         if messages_info or symbols_info:
-            grouped_old_user_info = cls.group_users_stats(messages_info, symbols_info)
+            grouped_old_user_info = self.group_users_stats(messages_info, symbols_info)
         else:
             grouped_old_user_info = {}
         UserMaxStats.compare_and_update_users_max_info(grouped_old_user_info, users_new_data, period)
 
-    @classmethod
-    def get_current_users_stats(
-            cls,
-            period: str) -> Optional[dict[int, UserStatsForCurrentDay]]:
+    @staticmethod
+    def get_current_users_stats(period: str) -> dict[int, UserStatsForCurrentDay] | None:
         users_info = {}
         if period == "day":
-            return MDC.authors
+            return message_day_counter.authors
         elif period == "week":
             result = UserCurrentStats.fetch_users_current_stats_for_period(UserStatsForCurrentWeek)
         elif period == "month":
@@ -66,8 +74,8 @@ class UserStats(Statistic):
             users_info[user_id] = UserStatsForCurrentDay(amount_of_symbols=symbols, amount_of_messages=messages)
         return users_info
 
-    @classmethod
-    def group_users_stats(cls, messages_info: list, symbols_info: list) -> dict[int, UserStatsForCurrentDay]:
+    @staticmethod
+    def group_users_stats(messages_info: list, symbols_info: list) -> dict[int, UserStatsForCurrentDay]:
         user_ids = {user_id for stats_info in (messages_info, symbols_info) for user_id, _ in stats_info}
         messages_info = {user_id: amount for user_id, amount in messages_info}
         symbols_info = {user_id: amount for user_id, amount in symbols_info}
@@ -81,3 +89,6 @@ class UserStats(Statistic):
                 amount_of_symbols=amount_of_symbols,
             )
         return users_info
+
+
+user_stats = UserStats()

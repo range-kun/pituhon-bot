@@ -11,9 +11,9 @@ from tabulate import tabulate
 
 from app.configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID, MY_GUILD
 from app.utils.data import Data
-from app.utils.message_stats_routine import MessageDayCounter as MDC
 from app.utils.data.channel_stats import ServerStats
 from app.utils.data.user_stats import UserCurrentStats, UserMaxStats, UserOverallStats
+from app.utils.message_stats_routine import message_day_counter
 
 
 class MessageChannel:
@@ -42,8 +42,9 @@ class MessageStats(commands.Cog):
         message_info = {"-m": "основной", "-t": "тестовый"}
         channel_name = message_info.get(text)
         if not channel_name or text is None:
-            await ctx.send("Указан неверный аргумент для отправки статистики,"
-                           " укажите -m (основной) или -t (тестовый)")
+            await ctx.send(
+                "Указан неверный аргумент для отправки статистики, укажите -m (основной) или -t (тестовый)"
+            )
             return
 
         MessageChannel.set_stats_channel(text)
@@ -97,7 +98,7 @@ class MessageStats(commands.Cog):
         await ctx.send(embed=info)
 
     async def proceed_users_day_data(self, ctx: commands.Context, author: discord.User):
-        author_stats = MDC.authors.get(author.id)
+        author_stats = message_day_counter.authors.get(author.id)
         if not author_stats:
             await ctx.send("Напишите еще что нибудь")
             return
@@ -130,7 +131,7 @@ class MessageStats(commands.Cog):
 
         overall_stats_structure = MessageStructure.create_server_overall_structure(
             (messages, symbols),
-            (MDC.messages, MDC.symbols)
+            (message_day_counter.messages, message_day_counter.symbols)
         )
         overall_stats_structure = str(f"```yaml\n{overall_stats_structure}```")
 
@@ -179,7 +180,7 @@ class MessageStructure:
         current_stats_structure = [
             ["Кол-во \nсообщений", "Кол-во \nсимволов"],
         ]
-        author_stats = MDC.authors.get(user_id)
+        author_stats = message_day_counter.authors.get(user_id)
         if not author_stats and not user_current_info:
             return
 

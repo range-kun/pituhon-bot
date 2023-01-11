@@ -1,29 +1,26 @@
 from __future__ import annotations
 
-import asyncio
 import random
 import re
 import urllib.parse
 
 import aiohttp
-import aioschedule as schedule
 import discord
-from loguru import logger
 import yaml
 from bs4 import BeautifulSoup
 from discord import app_commands, errors
 from discord.ext import commands
 from discord.ext.commands import CommandError
+from loguru import logger
 
 from app.cogs.poll import PollMessageTrack
 from app.configuration import UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX
 from app.utils import today, send_yaml_text
 from app.utils.data.history_record import HistoryRecord
 from app.utils.data.phrase import PhraseData
-from app.utils.message_stats_routine import MessageDayCounter as MDC
-from app.utils.message_stats_routine.chanel_stats_routine import ChanelStats
-from app.utils.message_stats_routine.user_stats_routine import UserStats
-
+from app.utils.message_stats_routine import message_day_counter
+from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
+from app.utils.message_stats_routine.user_stats_routine import user_stats
 
 HELLO_WORDS = ["ky", "ку"]
 ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
@@ -75,10 +72,10 @@ class Bot(commands.Bot):
                 f"Команде {ctx.message.content} не хватает аргументов, наберите ?cmds для подсказки"
             )
         else:
-            logger.opt(exception=exception).error(f"Unexpected error str{exception} occurred.")
+            logger.opt(exception=exception).error(f"Unexpected error {str(exception)} occurred.")
 
     async def on_message(self, message: discord.Message, /) -> None:
-        MDC.proceed_message_info(message)
+        message_day_counter.proceed_message_info(message)
         msg_text = message.content.lower()
 
         nahooj_message = self.parse_nahoj_message(message)
@@ -259,28 +256,18 @@ async def f(ctx):
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
 
 
-schedule.every().day.at("23:00").do(UserStats.daily_routine)
-schedule.every().sunday.at("23:03").do(UserStats.weekly_routine)
-schedule.every().day.at("23:06").do(UserStats.monthly_routine)
-
-schedule.every().day.at("23:10").do(ChanelStats.daily_routine)
-schedule.every().sunday.at("23:13").do(ChanelStats.weekly_routine)
-schedule.every().day.at("23:16").do(ChanelStats.monthly_routine)
-
-
-schedule.every().day.at("23:20").do(MDC.delete_redis_info)
-schedule.every(20).minutes.do(MDC.counter_routine)
-
-
-async def my_schedule():
-    while True:
-        await schedule.run_pending()
-        await asyncio.sleep(5)
-
-
 @bot.event
 async def on_ready():
-    ChanelStats.set_bot(bot)
-    bot.loop.create_task(my_schedule())
-    logger.info("Bot connected")
+    message_day_counter.counter_routine.start()
+    message_day_counter.delete_redis_info.start()
 
+    user_stats.daily_routine.start()
+    user_stats.weekly_routine.start()
+    user_stats.monthly_routine.start()
+
+    channel_stats.daily_routine.start()
+    channel_stats.weekly_routine.start()
+    channel_stats.monthly_routine.start()
+
+    channel_stats.set_bot(bot)
+    logger.info("Bot connected")

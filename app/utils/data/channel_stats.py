@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
 from app.log import logger
+from app.utils import today
 from app.utils.data import Data
 from app.utils.data.user_stats import UserStatsForCurrentWeek, UserStatsForCurrentMonth, UserMaxStats
 
@@ -45,11 +46,17 @@ class ServerStats(Data):
         try:
             max_amount_messages_for_period = cls.get_max_stats_for_period(period, MaxServerMessagesForPeriod)[0]
             max_amount_symbols_for_period = cls.get_max_stats_for_period(period, MaxServerSymbolsForPeriod)[0]
+
+        except TypeError:  # data not exists in database
+            cls.insert_new_max_data(period, current_amount_of_messages, MaxServerMessagesForPeriod)
+            cls.insert_new_max_data(period, current_amount_of_symbols, MaxServerSymbolsForPeriod)
+            return
+
         except Exception as e:
             logger.opt(exception=True).error(
-                f"Exception occurred {str(e)} while fetching data from Redis"
+                f"Exception occurred {str(e)} while fetching data from databases"
             )
-            return "Извините произошла ошибка при попытке получить данных о сервере"
+            return "Извините произошла ошибка при попытке получить данных с сервера"
 
         if current_amount_of_messages > max_amount_messages_for_period:
             cls.update_max_stats(period, current_amount_of_messages, MaxServerMessagesForPeriod)
@@ -58,7 +65,11 @@ class ServerStats(Data):
             cls.update_max_stats(period, current_amount_of_symbols, MaxServerSymbolsForPeriod)
 
     @classmethod
-    def get_max_stats_for_period(cls, period: str, data_class: Type[Data]) -> list[int]:
+    def insert_new_max_stats(cls, period, amount, data_class: Type[Data]):
+        data_class.insert(period=period, amount=amount, date=today())
+
+    @staticmethod
+    def get_max_stats_for_period(period: str, data_class: Type[Data]) -> list[int]:
 
         result = data_class.get_data("amount", condition=(data_class.get_table().c.period == period))
         result = result.fetchone()
@@ -66,7 +77,11 @@ class ServerStats(Data):
 
     @classmethod
     def update_max_stats(cls, period, amount, data_class: Type[Data]):
-        data_class.update(condition=(data_class.get_table().c.period == period), amount=amount)
+        data_class.update(
+            condition=(data_class.get_table().c.period == period),
+            amount=amount,
+            date=today()
+        )
 
     @classmethod
     def fetch_all_data(cls, connection: Connection):
@@ -103,13 +118,12 @@ class ServerStats(Data):
             user_with_most_symbols
         ]
 
-    @classmethod
-    def set_current_stats_for_period_to_zero(cls, period: str):
+    @staticmethod
+    def set_current_stats_for_period_to_zero(period: str):
         if period == "week":
             data_class = UserStatsForCurrentWeek
         elif period == "month":
             data_class = UserStatsForCurrentMonth
         else:
             return
-
         data_class.update(messages=0, symbols=0)

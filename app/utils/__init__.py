@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 
 from discord.channel import TextChannel
 
-
 from app.log import logger
 
 
@@ -11,6 +10,10 @@ def is_last_month_day():
     this_day = datetime.now()
     last_month_day = calendar.monthrange(this_day.year, this_day.month)[1]
     return last_month_day == this_day.day
+
+
+def is_sunday():
+    return datetime.today().strftime("%A") == "Sunday"
 
 
 def yesterday():

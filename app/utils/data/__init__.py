@@ -72,13 +72,15 @@ class Data:
         session.commit()
 
     @classmethod
-    def get_data(cls,
-                 *fields,
-                 condition=None,
-                 limit: int = None,
-                 offset: int = None,
-                 order=None,
-                 connection=None) -> LegacyCursorResult:
+    def get_data(
+            cls,
+            *fields,
+            condition=None,
+            limit: int = None,
+            offset: int = None,
+            order=None,
+            connection=None
+    ) -> LegacyCursorResult:
         fields = [cls.get_table().c[field] for field in fields]
         query = sa.select(*fields)
 

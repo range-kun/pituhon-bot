@@ -1,145 +1,147 @@
+from datetime import datetime, time
+
 import discord
+from discord.ext import tasks
 
 from app.cogs.message_stats import MessageChannel
-from app.utils import is_last_month_day, catch_exception
+from app.log import logger
+from app.utils import is_last_month_day, is_sunday, catch_exception
 from app.utils.data.channel_stats import ServerStats
-from app.utils.message_stats_routine import Statistic, MessageDayCounter as MDC
-from app.configuration import TEST_CHANNEL_ID
+from app.utils.message_stats_routine import Statistic, message_day_counter
 
 
 class ChanelStats(Statistic):
-    symbols_for_month = 0
-    messages_for_month = 0
-    symbols_for_week = 0
-    messages_for_week = 0
+    tz = datetime.now().astimezone().tzinfo
+    daily_time = time(hour=23, minute=10, tzinfo=tz)
+    weekly_time = time(hour=23, minute=13, tzinfo=tz)
+    monthly_time = time(hour=23, minute=16, tzinfo=tz)
 
-    @classmethod
+    def __init__(self):
+        self.symbols_for_month = 0
+        self.messages_for_month = 0
+        self.symbols_for_week = 0
+        self.messages_for_week = 0
+
+    @tasks.loop(time=daily_time)
     @catch_exception
-    async def daily_routine(cls):
-        if not MDC.messages:
+    async def daily_routine(self):
+        if not message_day_counter.messages:
             return
-        messages_champ, symbols_champ = cls.collect_stats_for_day()
-        cls.update_max_stats_for_day()
-        await cls.send_message_stats_for_day(messages_champ, symbols_champ)
+        messages_champ, symbols_champ = self.collect_stats_for_day()
+        self.update_max_stats_for_day()
+        await self.send_message_stats_for_day(messages_champ, symbols_champ)
+        logger.info("Successfully updated channel daily stats")
 
-    @classmethod
+    @tasks.loop(time=weekly_time)
     @catch_exception
-    async def weekly_routine(cls):
-        messages_info, symbols_info = cls.collect_stats_for_week()
-        if not cls.messages_for_week:
+    async def weekly_routine(self):
+        # if not is_sunday():
+        #     return
+        messages_info, symbols_info = self.collect_stats_for_week()
+        if not self.messages_for_week:
             return
-        cls.update_max_stats_for_week()
-        await cls.send_message_stats_for_week(messages_info, symbols_info)
-        cls.set_week_current_stats_to_zero()
+        self.update_max_stats_for_week()
+        await self.send_message_stats_for_week(messages_info, symbols_info)
+        self.set_week_current_stats_to_zero()
+        logger.info("Successfully updated channel weekly stats")
 
-    @classmethod
+    @tasks.loop(time=monthly_time)
     @catch_exception
-    async def monthly_routine(cls):
-        if not is_last_month_day():
+    async def monthly_routine(self):
+        # if not is_last_month_day():
+        #     return
+        messages_info, symbols_info = self.collect_stats_for_month()
+        if not self.messages_for_month:
             return
-        messages_info, symbols_info = cls.collect_stats_for_month()
-        if not cls.messages_for_month:
-            return
-        cls.update_max_stats_for_month()
-        await cls.send_message_stats_for_month(messages_info, symbols_info)
-        cls.set_month_current_stats_to_zero()
+        self.update_max_stats_for_month()
+        await self.send_message_stats_for_month(messages_info, symbols_info)
+        self.set_month_current_stats_to_zero()
+        logger.info("Successfully updated channel month stats")
 
-    @classmethod
-    def collect_stats_for_day(cls) -> tuple:
-        messages_champ, symbols_champ = MDC.get_server_champ_for_today()
+    @staticmethod
+    def collect_stats_for_day() -> tuple:
+        messages_champ, symbols_champ = message_day_counter.get_server_champ_for_today()
         return messages_champ, symbols_champ
 
-    @classmethod
-    def collect_stats_for_week(cls) -> tuple:
+    def collect_stats_for_week(self) -> tuple:
         channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_week()
-        cls.messages_for_week, cls.symbols_for_week = channel_info
+        self.messages_for_week, self.symbols_for_week = channel_info
         return messages_info, symbols_info
 
-    @classmethod
-    def collect_stats_for_month(cls) -> tuple:
+    def collect_stats_for_month(self) -> tuple:
         channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_month()
-        cls.messages_for_month, cls.symbols_for_month = channel_info
+        self.messages_for_month, self.symbols_for_month = channel_info
         return messages_info, symbols_info
 
-    @classmethod
-    def update_max_stats_for_day(cls):
-        cls.update_max_stats("day", MDC.messages, MDC.symbols)
+    def update_max_stats_for_day(self):
+        self.update_max_stats("day", message_day_counter.messages, message_day_counter.symbols)
 
-    @classmethod
-    def update_max_stats_for_week(cls):
-        cls.update_max_stats("week", cls.messages_for_week, cls.symbols_for_week)
+    def update_max_stats_for_week(self):
+        self.update_max_stats("week", self.messages_for_week, self.symbols_for_week)
 
-    @classmethod
-    def update_max_stats_for_month(cls):
-        cls.update_max_stats("month", cls.messages_for_month, cls.symbols_for_month)
+    def update_max_stats_for_month(self):
+        self.update_max_stats("month", self.messages_for_month, self.symbols_for_month)
 
-    @classmethod
-    def set_week_current_stats_to_zero(cls):
-        cls.symbols_for_week = 0
-        cls.messages_for_week = 0
+    def set_week_current_stats_to_zero(self):
+        self.symbols_for_week = 0
+        self.messages_for_week = 0
         ServerStats.set_current_stats_for_period_to_zero("week")
 
-    @classmethod
-    def set_month_current_stats_to_zero(cls):
-        cls.symbols_for_month = 0
-        cls.messages_for_month = 0
+    def set_month_current_stats_to_zero(self):
+        self.symbols_for_month = 0
+        self.messages_for_month = 0
         ServerStats.set_current_stats_for_period_to_zero("month")
 
-    @classmethod
-    def update_max_stats(
-            cls,
-            period: str,
-            current_amount_of_messages: int,
-            current_amount_of_symbols: int
-         ):
-        ServerStats.compare_and_update_max_stats(period, current_amount_of_messages, current_amount_of_symbols)
+    @staticmethod
+    def update_max_stats(period: str, current_amount_of_messages: int, current_amount_of_symbols: int):
+        ServerStats.compare_and_update_max_stats(
+            period,
+            current_amount_of_messages,
+            current_amount_of_symbols
+        )
 
-    @classmethod
-    async def send_message_stats_for_day(cls, messages_info: tuple[int], symbols_info: tuple[int]):
-        output = await cls.create_output_message(
-            channel_info=(MDC.messages, MDC.symbols),
+    async def send_message_stats_for_day(self, messages_info: tuple[int], symbols_info: tuple[int]):
+        output = await self.create_output_message(
+            channel_info=(message_day_counter.messages, message_day_counter.symbols),
             messages_info=messages_info,
             symbols_info=symbols_info,
             period_info=("Всего за день", "Информация по серверу за 24 часа"),
         )
 
-        await cls.channel().send(embed=output)
+        await self.channel().send(embed=output)
 
-    @classmethod
-    async def send_message_stats_for_week(cls, messages_info: tuple, symbols_info: tuple):
+    async def send_message_stats_for_week(self, messages_info: tuple, symbols_info: tuple):
 
-        output = await cls.create_output_message(
-            channel_info=(cls.messages_for_week, cls.symbols_for_week),
+        output = await self.create_output_message(
+            channel_info=(self.messages_for_week, self.symbols_for_week),
             messages_info=messages_info,
             symbols_info=symbols_info,
             period_info=("неделю", "Еженедельная информация"),
         )
 
-        await cls.channel().send(embed=output)
+        await self.channel().send(embed=output)
 
-    @classmethod
-    async def send_message_stats_for_month(cls,  messages_info: tuple, symbols_info: tuple):
+    async def send_message_stats_for_month(self,  messages_info: tuple, symbols_info: tuple):
 
-        output = await cls.create_output_message(
-            channel_info=(cls.messages_for_month, cls.symbols_for_month),
+        output = await self.create_output_message(
+            channel_info=(self.messages_for_month, self.symbols_for_month),
             messages_info=messages_info,
             symbols_info=symbols_info,
             period_info=("месяц", "Ежемесячная информация"),
         )
 
-        await cls.channel(TEST_CHANNEL_ID).send(embed=output)
+        await self.channel().send(embed=output)
 
-    @classmethod
-    async def create_output_message(cls, *, channel_info, messages_info, symbols_info, period_info):
+    async def create_output_message(self, *, channel_info, messages_info, symbols_info, period_info):
         user_with_most_symbols, amount_of_symbols_top_user = symbols_info
         user_with_most_messages, amount_of_messages_top_user = messages_info
         amount_of_all_messages, amount_of_all_symbols = channel_info
         name_of_period, description_of_period = period_info
 
-        user_name_with_most_messages = await cls.bot.fetch_user(user_with_most_messages)
+        user_name_with_most_messages = await self.bot.fetch_user(user_with_most_messages)
         user_name_with_most_messages = user_name_with_most_messages.name
 
-        user_name_with_most_symbols = await cls.bot.fetch_user(user_with_most_symbols)
+        user_name_with_most_symbols = await self.bot.fetch_user(user_with_most_symbols)
         user_name_with_most_symbols = user_name_with_most_symbols.name
 
         channel_info = f"Кол-во сообщений  =>{amount_of_all_messages}\n" \
@@ -160,8 +162,10 @@ class ChanelStats(Statistic):
             emb.add_field(name=k, value=v, inline=False)
         return emb
 
-    @classmethod
-    def channel(cls):
+    def channel(self):
         channel_id = MessageChannel.get_stats_channel()
-        channel = cls.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(channel_id)
         return channel
+
+
+channel_stats = ChanelStats()
