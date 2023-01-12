@@ -35,5 +35,5 @@ class VoiceMessage(commands.Cog):
         os.remove(file_name)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(VoiceMessage(bot), guild=MY_GUILD)

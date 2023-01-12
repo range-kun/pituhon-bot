@@ -47,12 +47,12 @@ class Poll(commands.Cog):
 
     emojis = ["👍", "👎", "🤷"]
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     # parses the title, which should be in between curly brackets ("{title}")
     @staticmethod
-    def find_title(message: str) -> Optional[str]:
+    def find_title(message: str) -> str | None:
         title = re.match("{(.+?)}", message)
         return title.group(1) if title else None
 
@@ -222,7 +222,7 @@ class PollMessageTrack:
             self.poll_user_stats[message_id].update(user_new_reactions)
 
     @staticmethod
-    def fetch_message_info(message: DiscordMessage):
+    def fetch_message_info(message: DiscordMessage) -> tuple[str, str, int]:
         if message.embeds:
             message_embed = message.embeds[0]
             title = message_embed.title
@@ -250,7 +250,7 @@ class PollMessageTrack:
         return allowed_reactions
 
     @staticmethod
-    async def mark_finished(poll_message: DiscordMessage, result_message):
+    async def mark_finished(poll_message: DiscordMessage, result_message: discord.Message):
         if poll_message.embeds:
             message_embed = poll_message.embeds[0]
             description = message_embed.description

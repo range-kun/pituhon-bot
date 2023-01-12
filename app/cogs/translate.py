@@ -22,7 +22,7 @@ CHOICES = [app_commands.Choice(name=key, value=value) for key, value in LANGUAGE
 class Translate(commands.Cog):
     translator = Translator()
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @classmethod

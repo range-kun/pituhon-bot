@@ -33,8 +33,8 @@ class MessageChannel:
 
 class MessageStats(commands.Cog):
 
-    def __init__(self, bot):
-        self.bot: DiscordBot = bot
+    def __init__(self, bot: DiscordBot):
+        self.bot = bot
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -142,7 +142,7 @@ class MessageStats(commands.Cog):
         info = self.create_output_embed(author, data_dict, title="Статистика сервера")
         await ctx.send(embed=info)
 
-    async def proceed_champ_stats(self, ctx: commands.Context, author):
+    async def proceed_champ_stats(self, ctx: commands.Context, author: discord.User):
         champ_stats = UserMaxStats.fetch_champions_stats()
         champs_structure = await MessageStructure.create_champs_structure(self.bot, champ_stats)
 
@@ -233,14 +233,16 @@ class MessageStructure:
         max_stats_structure = [
             ["Кол-во", "Дата \nфиксации"],
         ]
-        symbols_headers = {"day": ["Символов", "за день"],
-                           "week": ["Символов", "за неделю"],
-                           "month": ["Символов", "за месяц"]
-                           }
-        message_headers = {"day": ["Сообщений", "за день"],
-                           "week": ["Сообщений", "за неделю"],
-                           "month": ["Сообщений", "за месяц"]
-                           }
+        symbols_headers = {
+            "day": ["Символов", "за день"],
+            "week": ["Символов", "за неделю"],
+            "month": ["Символов", "за месяц"]
+        }
+        message_headers = {
+            "day": ["Сообщений", "за день"],
+            "week": ["Сообщений", "за неделю"],
+            "month": ["Сообщений", "за месяц"]
+        }
 
         for headers, stats_collection in zip([message_headers, symbols_headers], [message_stats, symbol_stats]):
             for period in headers:  # to order from days to month
@@ -264,7 +266,11 @@ class MessageStructure:
         return {"За сегодня:": day_info}
 
     @classmethod
-    def create_server_overall_structure(cls, overall_stats, today_stats) -> str | None:
+    def create_server_overall_structure(
+            cls,
+            overall_stats: tuple[int, int],
+            today_stats: tuple[int, int]
+    ) -> str | None:
         db_messages, db_symbols = overall_stats
         today_messages, today_symbols = today_stats
         overall_messages = db_messages + today_messages
@@ -280,7 +286,7 @@ class MessageStructure:
         return tabulate(overall_stats_structure, headers="firstrow", tablefmt="rst")
 
     @classmethod
-    async def create_champs_structure(cls, bot: DiscordBot, champ_stats):
+    async def create_champs_structure(cls, bot: DiscordBot, champ_stats: list[tuple[int, int]]) -> str | None:
         champs_structure = [
             ["Рекордсмен", "Кол-во"],
         ]
@@ -306,7 +312,7 @@ class MessageStructure:
         return tabulate(champs_structure, headers="firstrow", tablefmt="fancy_grid")
 
     @classmethod
-    def format_record_date(cls, *, is_month, record_date):
+    def format_record_date(cls, *, is_month: bool, record_date: date) -> str:
         if is_month:
             record_date = record_date.strftime("%m-%Y")
         else:
@@ -315,5 +321,5 @@ class MessageStructure:
         return record_date
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(MessageStats(bot), guild=MY_GUILD)

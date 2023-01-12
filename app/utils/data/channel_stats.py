@@ -1,7 +1,7 @@
 from typing import Type
 
 import sqlalchemy as sa
-from sqlalchemy.engine import Connection
+from sqlalchemy.engine import Connection, Row
 
 from app.log import logger
 from app.utils import today
@@ -44,12 +44,12 @@ class ServerStats(Data):
             current_amount_of_symbols: int
     ):
         try:
-            max_amount_messages_for_period = cls.get_max_stats_for_period(period, MaxServerMessagesForPeriod)[0]
-            max_amount_symbols_for_period = cls.get_max_stats_for_period(period, MaxServerSymbolsForPeriod)[0]
+            max_amount_messages_for_period: int = cls.get_max_stats_for_period(period, MaxServerMessagesForPeriod)[0]
+            max_amount_symbols_for_period: int = cls.get_max_stats_for_period(period, MaxServerSymbolsForPeriod)[0]
 
         except TypeError:  # data not exists in database
-            cls.insert_new_max_data(period, current_amount_of_messages, MaxServerMessagesForPeriod)
-            cls.insert_new_max_data(period, current_amount_of_symbols, MaxServerSymbolsForPeriod)
+            cls.insert_new_max_stats(period, current_amount_of_messages, MaxServerMessagesForPeriod)
+            cls.insert_new_max_stats(period, current_amount_of_symbols, MaxServerSymbolsForPeriod)
             return
 
         except Exception as e:
@@ -69,14 +69,14 @@ class ServerStats(Data):
         data_class.insert(period=period, amount=amount, date=today())
 
     @staticmethod
-    def get_max_stats_for_period(period: str, data_class: Type[Data]) -> list[int]:
+    def get_max_stats_for_period(period: str, data_class: Type[Data]) -> Row:
 
         result = data_class.get_data("amount", condition=(data_class.get_table().c.period == period))
         result = result.fetchone()
         return result
 
     @classmethod
-    def update_max_stats(cls, period, amount, data_class: Type[Data]):
+    def update_max_stats(cls, period: str, amount: int, data_class: Type[Data]):
         data_class.update(
             condition=(data_class.get_table().c.period == period),
             amount=amount,
@@ -90,17 +90,17 @@ class ServerStats(Data):
         return messages, symbols
 
     @classmethod
-    def get_server_stats_for_week(cls):
+    def get_server_stats_for_week(cls) -> list[tuple[int]]:
         table = UserStatsForCurrentWeek.get_table()
         return cls.get_server_stats_for_period(table)
 
     @classmethod
-    def get_server_stats_for_month(cls):
+    def get_server_stats_for_month(cls) -> list[tuple[int]]:
         table = UserStatsForCurrentMonth.get_table()
         return cls.get_server_stats_for_period(table)
 
     @classmethod
-    def get_server_stats_for_period(cls, table: sa.Table) -> list:
+    def get_server_stats_for_period(cls, table: sa.Table) -> list[tuple[int]]:
         message_field = table.c["messages"]
         symbol_field = table.c["symbols"]
 

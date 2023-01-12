@@ -1,6 +1,7 @@
 from datetime import datetime, time
 
 import discord
+from discord.channel import TextChannel
 from discord.ext import tasks
 
 from app.cogs.message_stats import MessageChannel
@@ -35,8 +36,8 @@ class ChanelStats(Statistic):
     @tasks.loop(time=weekly_time)
     @catch_exception
     async def weekly_routine(self):
-        # if not is_sunday():
-        #     return
+        if not is_sunday():
+            return
         messages_info, symbols_info = self.collect_stats_for_week()
         if not self.messages_for_week:
             return
@@ -48,8 +49,8 @@ class ChanelStats(Statistic):
     @tasks.loop(time=monthly_time)
     @catch_exception
     async def monthly_routine(self):
-        # if not is_last_month_day():
-        #     return
+        if not is_last_month_day():
+            return
         messages_info, symbols_info = self.collect_stats_for_month()
         if not self.messages_for_month:
             return
@@ -59,16 +60,16 @@ class ChanelStats(Statistic):
         logger.info("Successfully updated channel month stats")
 
     @staticmethod
-    def collect_stats_for_day() -> tuple:
+    def collect_stats_for_day() -> tuple[tuple[int, int], tuple[int, int]]:
         messages_champ, symbols_champ = message_day_counter.get_server_champ_for_today()
         return messages_champ, symbols_champ
 
-    def collect_stats_for_week(self) -> tuple:
+    def collect_stats_for_week(self) -> tuple[tuple[int, int], tuple[int, int]]:
         channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_week()
         self.messages_for_week, self.symbols_for_week = channel_info
         return messages_info, symbols_info
 
-    def collect_stats_for_month(self) -> tuple:
+    def collect_stats_for_month(self) -> tuple[tuple[int, int], tuple[int, int]]:
         channel_info, messages_info, symbols_info = ServerStats.get_server_stats_for_month()
         self.messages_for_month, self.symbols_for_month = channel_info
         return messages_info, symbols_info
@@ -100,7 +101,7 @@ class ChanelStats(Statistic):
             current_amount_of_symbols
         )
 
-    async def send_message_stats_for_day(self, messages_info: tuple[int], symbols_info: tuple[int]):
+    async def send_message_stats_for_day(self, messages_info: tuple[int, int], symbols_info: tuple[int, int]):
         output = await self.create_output_message(
             channel_info=(message_day_counter.messages, message_day_counter.symbols),
             messages_info=messages_info,
@@ -110,7 +111,7 @@ class ChanelStats(Statistic):
 
         await self.channel().send(embed=output)
 
-    async def send_message_stats_for_week(self, messages_info: tuple, symbols_info: tuple):
+    async def send_message_stats_for_week(self, messages_info: tuple[int, int], symbols_info: tuple[int, int]):
 
         output = await self.create_output_message(
             channel_info=(self.messages_for_week, self.symbols_for_week),
@@ -121,7 +122,7 @@ class ChanelStats(Statistic):
 
         await self.channel().send(embed=output)
 
-    async def send_message_stats_for_month(self,  messages_info: tuple, symbols_info: tuple):
+    async def send_message_stats_for_month(self,  messages_info: tuple[int, int], symbols_info: tuple[int, int]):
 
         output = await self.create_output_message(
             channel_info=(self.messages_for_month, self.symbols_for_month),
@@ -132,7 +133,14 @@ class ChanelStats(Statistic):
 
         await self.channel().send(embed=output)
 
-    async def create_output_message(self, *, channel_info, messages_info, symbols_info, period_info):
+    async def create_output_message(
+            self,
+            *,
+            channel_info: tuple[int, int],
+            messages_info: tuple[int, int],
+            symbols_info: tuple[int, int],
+            period_info: tuple[str, str]
+    ) -> discord.Embed:
         user_with_most_symbols, amount_of_symbols_top_user = symbols_info
         user_with_most_messages, amount_of_messages_top_user = messages_info
         amount_of_all_messages, amount_of_all_symbols = channel_info
@@ -162,7 +170,7 @@ class ChanelStats(Statistic):
             emb.add_field(name=k, value=v, inline=False)
         return emb
 
-    def channel(self):
+    def channel(self) -> TextChannel:
         channel_id = MessageChannel.get_stats_channel()
         channel = self.bot.get_channel(channel_id)
         return channel

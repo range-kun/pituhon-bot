@@ -6,6 +6,7 @@ import json
 import re
 
 import redis
+from discord import Message
 from discord.ext import tasks
 from redis.commands.json.path import Path
 
@@ -26,7 +27,7 @@ class UserStatsForCurrentDay:
     amount_of_symbols: int = 0
     amount_of_messages: int = 0
 
-    def __add__(self, other):
+    def __add__(self, other: UserStatsForCurrentDay) -> UserStatsForCurrentDay:
         if isinstance(other, UserStatsForCurrentDay):
             amount_of_symbols = self.amount_of_symbols + other.amount_of_symbols
             amount_of_messages = self.amount_of_messages + other.amount_of_messages
@@ -108,7 +109,7 @@ class MessageDayCounter:
             authors[user_id] = new_data
         return authors
 
-    def proceed_message_info(self, message):
+    def proceed_message_info(self, message: Message):
         if message.author.bot:
             return
         msg = message.content.lower()
@@ -145,5 +146,5 @@ message_day_counter = MessageDayCounter()
 class Statistic:
     bot = None
 
-    def set_bot(self, bot):
+    def set_bot(self, bot: Bot):
         self.bot = bot

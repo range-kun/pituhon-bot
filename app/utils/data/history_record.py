@@ -6,6 +6,7 @@ from typing import Union
 import sqlalchemy as sa
 from sqlalchemy.engine import Row
 from sqlalchemy.sql import extract
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.configuration import MAX_HIST_RETRIEVE_RECORDS
 from app.utils.data import Data
@@ -25,14 +26,14 @@ class HistoryRecord(Data):
         )
 
     @classmethod
-    def parse_date(cls, text: str):
+    def parse_date(cls, text: str) -> list[int] | None:
         date = re.match(r"((?:\d{2}-)?(?:\d{2}-)?\d{4})", text)
         if not date:
             return
         return [int(i) for i in date[1].split("-")[::-1]]
 
     @classmethod
-    def format_condition(cls, date):
+    def format_condition(cls, date: list[int]) -> BinaryExpression | BooleanClauseList:
         if len(date) == 3:  # full date
             date = "-".join(str(i) for i in date)
             return cls.get_table().c.date == date
@@ -47,7 +48,7 @@ class HistoryRecord(Data):
             return extract("year", date_field) == year
 
     @classmethod
-    def get_record(cls, date: str = None, offset: int | None = None) -> Union[list, str]:
+    def get_record(cls, date: str = None, offset: int | None = None) -> list | str:
         if not date:
             return cls.get_random_record()
 

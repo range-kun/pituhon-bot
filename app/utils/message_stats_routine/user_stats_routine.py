@@ -27,16 +27,16 @@ class UserStats:
     @tasks.loop(time=weekly_time)
     @catch_exception
     async def weekly_routine(self):
-        # if not is_sunday():
-        #     return
+        if not is_sunday():
+            return
         self.update_user_max_stats_for_period("week")
         logger.info("Successfully updated user weekly stats")
 
     @tasks.loop(time=monthly_time)
     @catch_exception
     async def monthly_routine(self):
-        # if not is_last_month_day():
-        #     return
+        if not is_last_month_day():
+            return
         self.update_user_max_stats_for_period("month")
         logger.info("Successfully updated user month stats")
 
