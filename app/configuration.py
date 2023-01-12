@@ -17,6 +17,7 @@ MY_GUILD = discord.Object(id=SERVER_ID)
 
 # Discord token
 TOKEN = config("BOT_TOKEN")
+TEST_TOKEN = config("BOT_TEST_TOKEN", default=None)
 
 # Google
 API_KEY = config("API_KEY")

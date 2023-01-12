@@ -1,4 +1,4 @@
-FROM python:3.11.1-slim as builder
+FROM python:3.11.1-slim-buster as builder
 
 WORKDIR /app
 
@@ -9,7 +9,6 @@ RUN apt-get update \
 COPY ./requirements.txt .
 RUN pip install --upgrade pip
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
-RUN pip install -r requirements.txt
 
 
 #####
@@ -20,7 +19,6 @@ WORKDIR /app
 
 RUN apt-get -y update && apt-get install -y libpq-dev  \
     && apt-get -y autoremove
-
 
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
