@@ -222,9 +222,11 @@ async def cmds(ctx: commands.Context):
         logger.opt(exception=True).error(f"Commands description with {description_file_path} not found")
         await ctx.send(r"При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯")
         return
-
     for command_name, description in commands_description.items():
-        new_line = f"{PREFIX}{command_name}".ljust(20) + f"-- {description} \n"
+        prefix = PREFIX
+        if command_name.startswith("/"):
+            prefix = ""
+        new_line = f"{prefix}{command_name}".ljust(20) + f"-- {description} \n"
         if len(output + new_line) > 2000:  # 2000 max message length
             await send_yaml_text(output, ctx)
             output = new_line
