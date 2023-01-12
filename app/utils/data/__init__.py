@@ -5,12 +5,16 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.cursor import LegacyCursorResult
 
-from configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+from app.configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+
+metadata = sa.MetaData()
 
 
 class Data:
+
     table: Optional[sa.Table] = None
     db: Optional[sa.engine.Engine] = None
+    metadata = metadata
 
     @classmethod
     def get_table(cls) -> sa.Table:
@@ -27,7 +31,7 @@ class Data:
     @classmethod
     def connect_to_db(cls):
         cls.db = sa.create_engine(
-            url=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}'
+            url=f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
         )
 
     @classmethod
@@ -68,13 +72,15 @@ class Data:
         session.commit()
 
     @classmethod
-    def get_data(cls,
-                 *fields,
-                 condition=None,
-                 limit: int = None,
-                 offset: int = None,
-                 order=None,
-                 connection=None) -> LegacyCursorResult:
+    def get_data(
+            cls,
+            *fields,
+            condition=None,
+            limit: int = None,
+            offset: int = None,
+            order=None,
+            connection=None
+    ) -> LegacyCursorResult:
         fields = [cls.get_table().c[field] for field in fields]
         query = sa.select(*fields)
 

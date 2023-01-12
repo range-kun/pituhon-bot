@@ -1,23 +1,29 @@
 from __future__ import annotations
 
-from typing import Type
+from typing import Type, TypeVar
 
 import sqlalchemy as sa
-from sqlalchemy.engine import Connection
+from sqlalchemy import Column
+from sqlalchemy.engine import Connection, Row
 from sqlalchemy.orm.session import Session
 
-from utils.data import Data
-from utils import today
-from utils.message_stats_routine import UserStatsForCurrentDay
+from app.utils.data import Data
+from app.utils import today
+from app.utils.message_stats_routine import UserStatsForCurrentDay
 
 
 class UserOverallStats(Data):
 
     @classmethod
     def create_table(cls) -> sa.Table:
+        table_name = "user_overall_stats"
+        table = cls.metadata.tables.get(table_name)
+
+        if table is not None:
+            return table
         return sa.Table(
-            "user_overall_stats",
-            sa.MetaData(),
+            table_name,
+            cls.metadata,
             sa.Column("user_id", sa.BIGINT, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER)
@@ -53,7 +59,7 @@ class UserStatsForCurrentWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_stats_for_current_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER),
@@ -67,7 +73,7 @@ class UserStatsForCurrentMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_stats_for_current_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("symbols", sa.INTEGER),
@@ -81,7 +87,7 @@ class UserMaxMessagesForDay(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_day",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -95,7 +101,7 @@ class UserMaxSymbolsForDay(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_day",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -109,7 +115,7 @@ class UserMaxMessagesForWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -123,7 +129,7 @@ class UserMaxSymbolsForWeek(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_week",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -137,7 +143,7 @@ class UserMaxMessagesForMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_messages_for_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("messages", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -151,7 +157,7 @@ class UserMaxSymbolsForMonth(Data):
     def create_table(cls) -> sa.Table:
         return sa.Table(
             "user_max_symbols_for_month",
-            sa.MetaData(),
+            cls.metadata,
             sa.Column("id", sa.INTEGER, primary_key=True),
             sa.Column("symbols", sa.INTEGER),
             sa.Column("record_date", sa.DATE),
@@ -184,7 +190,7 @@ class UserCurrentStats(Data):
                 messages = user.amount_of_messages \
                            + users_dict_db_data[user_id].amount_of_messages
                 symbols = user.amount_of_symbols \
-                          + users_dict_db_data[user_id].amount_of_symbols
+                           + users_dict_db_data[user_id].amount_of_symbols
                 user_stats_class.update(
                     connection=connection,
                     condition=(user_stats_class.get_table().c.user_id == user_id),
@@ -204,7 +210,7 @@ class UserCurrentStats(Data):
             cls,
             user_stats_class: Type[Data],
             connection: Connection = None
-    ) -> list:
+    ) -> list[Row]:  # return list of users amount of messages and symbols
         users_db_data = user_stats_class.get_data(
             "user_id",
             "messages",
@@ -213,7 +219,7 @@ class UserCurrentStats(Data):
         return users_db_data
 
     @classmethod
-    def fetch_single_user_db_stats(cls, session: Session, user_id: int) -> list:
+    def fetch_single_user_db_stats(cls, session: Session, user_id: int) -> list[int]:
         required_data = [
             cls.user_stats_for_cur_month_table.c.messages,
             cls.user_stats_for_cur_month_table.c.symbols,
@@ -267,18 +273,20 @@ class UserMaxStats(Data):
                     continue
 
                 if user_new_data.amount_of_messages > user_old_data.amount_of_messages:
-                    message_class.update(connection=connection,
-                                         condition=(message_class.get_table().c.user_id == user_id),
-                                         messages=user_new_data.amount_of_messages,
-                                         record_date=today()
-                                         )
+                    message_class.update(
+                        connection=connection,
+                        condition=(message_class.get_table().c.user_id == user_id),
+                        messages=user_new_data.amount_of_messages,
+                        record_date=today()
+                    )
 
                 if user_new_data.amount_of_symbols > user_old_data.amount_of_symbols:
-                    symbols_class.update(connection=connection,
-                                         condition=(symbols_class.get_table().c.user_id == user_id),
-                                         symbols=user_new_data.amount_of_symbols,
-                                         record_date=today()
-                                         )
+                    symbols_class.update(
+                        connection=connection,
+                        condition=(symbols_class.get_table().c.user_id == user_id),
+                        symbols=user_new_data.amount_of_symbols,
+                        record_date=today()
+                    )
 
     @classmethod
     def add_new_max_user_stats(
@@ -306,7 +314,7 @@ class UserMaxStats(Data):
             )
 
     @classmethod
-    def fetch_user_db_max_stats(cls, session: Session, user_id: int):
+    def fetch_user_db_max_stats(cls, session: Session, user_id: int) -> list[int]:
         required_data = []
         max_tables = cls.create_max_tables()
         msg_fields = ["messages", "record_date"]
@@ -332,7 +340,7 @@ class UserMaxStats(Data):
         return list(user_data[0][1:]) if user_data else []
 
     @classmethod
-    def get_all_users_max_stats(cls, period: str) -> tuple[list, list]:
+    def get_all_users_max_stats(cls, period: str) -> tuple[list[tuple[int]], list[tuple[int]]]:
         message_class, symbols_class = cls.define_users_classes(period)
 
         with cls.begin() as connection:
@@ -341,7 +349,7 @@ class UserMaxStats(Data):
         return messages_info, symbols_info
 
     @classmethod
-    def fetch_champions_stats(cls):
+    def fetch_champions_stats(cls) -> list[tuple[int, int]]:
         champs_stats = []
         with cls.do_with_session() as session:
             max_tables = cls.create_max_tables()
@@ -360,7 +368,7 @@ class UserMaxStats(Data):
             cls,
             session: Session,
             message_table: sa.Table,
-            symbols_table: sa.Table = None) -> tuple[tuple, tuple]:
+            symbols_table: sa.Table = None) -> tuple[tuple[int], tuple[int]]:
 
         if symbols_table is None:
             symbols_table = message_table
@@ -376,7 +384,7 @@ class UserMaxStats(Data):
         return user_with_most_messages_info, user_with_most_symbols_info
 
     @classmethod
-    def fetch_user_with_max_symbols(cls, session: Session, table: sa.Table) -> tuple[int, int]:
+    def fetch_user_with_max_symbols(cls, session: Session, table: sa.Table) -> list[tuple]:
         symbol_field = table.c["symbols"]
         user_id_field = table.c["user_id"]
         user_with_most_symbols = \
@@ -384,7 +392,7 @@ class UserMaxStats(Data):
         return user_with_most_symbols.all()
 
     @classmethod
-    def fetch_user_with_max_messages(cls, session: Session, table: sa.Table) -> tuple:
+    def fetch_user_with_max_messages(cls, session: Session, table: sa.Table) -> list[tuple]:
         message_field = table.c["messages"]
         user_id_field = table.c["user_id"]
         user_with_most_messages = \
@@ -392,7 +400,7 @@ class UserMaxStats(Data):
         return user_with_most_messages.all()
 
     @classmethod
-    def define_users_classes(cls, period: str):
+    def define_users_classes(cls, period: str) -> tuple[Type[Data], Type[Data]] | tuple[None, None]:
         if period == "day":
             message_class, symbols_class = cls.user_max_stats_for_day
         elif period == "week":
@@ -405,11 +413,12 @@ class UserMaxStats(Data):
         return message_class, symbols_class
 
     @classmethod
-    def define_required_fields(cls,
-                               max_tables: list[sa.Table],
-                               msg_fields: list[str],
-                               symbols_fields: list[str]
-                               ):
+    def define_required_fields(
+            cls,
+            max_tables: list[sa.Table],
+            msg_fields: list[str],
+            symbols_fields: list[str]
+    ) -> list[Column]:
         required_fields = []
 
         messages_table, symbol_table = max_tables
@@ -419,7 +428,7 @@ class UserMaxStats(Data):
         return required_fields
 
     @classmethod
-    def create_max_tables(cls):
+    def create_max_tables(cls) -> list[list[sa.Table]]:
         if cls.max_tables is None:
             max_tables = []
             for period in ["day", "week", "month"]:

@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  data_base:
+    image: postgres:14.2
+    container_name: discord_db_container
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_LOCAL_NAME}
+      POSTGRES_USER: ${DB_USER}
+    volumes:
+      - discord_db_volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  app:
+    build:
+      context: .
+    depends_on:
+      - data_base
+    command:  bash -c "alembic upgrade head && python -m app"
+    environment:
+      DB_HOST: discord_db_container
+      LOGGER_OUTPUT: container
+    volumes:
+      - /home/discord/logs:/app/logs
+volumes:
+  discord_db_volume:
