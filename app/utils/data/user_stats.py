@@ -433,7 +433,7 @@ class UserMaxStats(Data):
             max_tables = []
             for period in ["day", "week", "month"]:
                 max_classes = cls.define_users_classes(period)
-                max_tables.append([max_class.create_table() for max_class in max_classes])
+                max_tables.append([max_class.get_table() for max_class in max_classes])
             cls.max_tables = max_tables
         return cls.max_tables
 

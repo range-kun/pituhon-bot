@@ -88,7 +88,8 @@ class Data:
             order=None,
             connection=None
     ) -> LegacyCursorResult:
-        fields = [cls.get_table().c[field] for field in fields]
+        table = cls.get_table()
+        fields = [table.c[field] for field in fields]
         query = sa.select(*fields)
 
         if condition is not None:
