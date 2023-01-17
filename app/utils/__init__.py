@@ -8,6 +8,13 @@ from discord.ext import commands
 from app.log import logger
 
 
+class BotSetter:
+    bot = None
+
+    def set_bot(self, bot):
+        self.bot = bot
+
+
 def is_last_month_day() -> bool:
     this_day = datetime.now()
     last_month_day = calendar.monthrange(this_day.year, this_day.month)[1]
@@ -24,6 +31,14 @@ def yesterday() -> datetime.date:
 
 def today() -> datetime.date:
     return datetime.date(datetime.now())
+
+
+def tomorrow() -> datetime.date:
+    return datetime.date(datetime.now() + timedelta(days=1))
+
+
+def tomorrow_text_type() -> str:
+    return tomorrow().strftime("%Y-%m-%d")
 
 
 def fetch_all_channel_users(channel: TextChannel) -> list[Member]:

@@ -15,6 +15,7 @@ from discord.ext.commands import CommandError
 from loguru import logger
 
 from app.cogs.poll import PollMessageTrack
+from cogs.birthday_reminder import birthday_reminder
 from app.configuration import UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX
 from app.utils import today, send_yaml_text
 from app.utils.data.history_record import HistoryRecord
@@ -38,6 +39,7 @@ class Bot(commands.Bot):
         self.nahooj = 0
 
     async def setup_hook(self) -> None:
+        await self.load_extension("app.cogs.birthday_reminder")
         await self.load_extension("app.cogs.google_search")
         await self.load_extension("app.cogs.poll")
         await self.load_extension("app.cogs.translate")
@@ -45,6 +47,24 @@ class Bot(commands.Bot):
         await self.load_extension("app.cogs.message_stats")
         await self.load_extension("app.cogs.manage_users")
         await self.tree.sync(guild=MY_GUILD)
+
+    async def on_ready(self):
+        message_day_counter.counter_routine.start()
+        message_day_counter.delete_redis_info.start()
+
+        birthday_reminder.set_bot(bot)
+        birthday_reminder.remind_birthday_routine.start()
+
+        user_stats.daily_routine.start()
+        user_stats.weekly_routine.start()
+        user_stats.monthly_routine.start()
+
+        channel_stats.daily_routine.start()
+        channel_stats.weekly_routine.start()
+        channel_stats.monthly_routine.start()
+        channel_stats.set_bot(bot)
+
+        logger.info("Bot connected")
 
     async def on_reaction_add(self, reaction, user):
         if user.bot:
@@ -116,7 +136,7 @@ class Bot(commands.Bot):
             return range_lox_regex[1]
 
     @staticmethod
-    def parse_url_link(msg_content: str, author_id) -> str | None:
+    def parse_url_link(msg_content: str, author_id: int) -> str | None:
         url_check = re.search(r"^(?:https?:\/\/)?(?:w{3}\.)?", msg_content.lower())
         if url_check and msg_content != urllib.parse.unquote(msg_content):
             message_content = urllib.parse.unquote(msg_content)
@@ -140,6 +160,7 @@ class Bot(commands.Bot):
 
 bot = Bot()
 bot.remove_command("help")
+
 
 
 # add phrase
@@ -259,19 +280,3 @@ async def f(ctx: commands.Context):
     fact = soup.find("table", class_="text").find("td").text
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
 
-
-@bot.event
-async def on_ready():
-    message_day_counter.counter_routine.start()
-    message_day_counter.delete_redis_info.start()
-
-    user_stats.daily_routine.start()
-    user_stats.weekly_routine.start()
-    user_stats.monthly_routine.start()
-
-    channel_stats.daily_routine.start()
-    channel_stats.weekly_routine.start()
-    channel_stats.monthly_routine.start()
-
-    channel_stats.set_bot(bot)
-    logger.info("Bot connected")

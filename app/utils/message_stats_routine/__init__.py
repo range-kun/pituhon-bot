@@ -142,9 +142,3 @@ class MessageDayCounter:
 
 message_day_counter = MessageDayCounter()
 
-
-class Statistic:
-    bot = None
-
-    def set_bot(self, bot):
-        self.bot = bot

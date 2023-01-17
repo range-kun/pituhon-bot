@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, Callable
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
@@ -59,6 +59,14 @@ class Data:
         cls.execute(statement=lambda: query.values(**data), connection=connection)
 
     @classmethod
+    def delete(cls, *, connection=None, condition=None):
+        cls.get_table()
+        query = sa.delete(cls.table)
+        if condition is not None:
+            query = query.where(condition)
+        cls.execute(statement=lambda: query, connection=connection)
+
+    @classmethod
     def begin(cls):
         return cls.get_engine().begin()
 
@@ -103,7 +111,7 @@ class Data:
         cls.execute(statement=lambda: sa.delete(cls.table), connection=connection)
 
     @classmethod
-    def execute(cls, *, statement, connection=None):
+    def execute(cls, *, statement: Callable, connection=None):
         if connection is not None:
             result = connection.execute(
                 statement()

@@ -6,12 +6,12 @@ from discord.ext import tasks
 
 from app.cogs.message_stats import MessageChannel
 from app.log import logger
-from app.utils import is_last_month_day, is_sunday, catch_exception
+from app.utils import is_last_month_day, is_sunday, catch_exception, BotSetter
 from app.utils.data.channel_stats import ServerStats
-from app.utils.message_stats_routine import Statistic, message_day_counter
+from app.utils.message_stats_routine import message_day_counter
 
 
-class ChanelStats(Statistic):
+class ChanelStats(BotSetter):
     tz = datetime.now().astimezone().tzinfo
     daily_time = time(hour=23, minute=10, tzinfo=tz)
     weekly_time = time(hour=23, minute=13, tzinfo=tz)
