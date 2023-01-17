@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord.ext.commands.bot import Bot as DiscordBot
 from tabulate import tabulate
 
+from app import NOTIFICATION_CHANNEL
 from app.configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID, MY_GUILD
 from app.utils.data import Data
 from app.utils.data.channel_stats import ServerStats
@@ -17,10 +18,10 @@ from app.utils.message_stats_routine import message_day_counter
 
 
 class MessageChannel:
-    stats_channel = MAIN_CHANNEL_ID
+    stats_channel = NOTIFICATION_CHANNEL
 
     @classmethod
-    def get_stats_channel(cls) -> int:
+    def get_stats_channel(cls) -> int | None:
         return cls.stats_channel
 
     @classmethod
@@ -82,7 +83,7 @@ class MessageStats(commands.Cog):
         current_structure = MessageStructure.create_user_current_structure(users_current_info, author.id)
         max_structure = MessageStructure.create_user_max_structure(user_max_info)
 
-        if not max_structure and current_structure:
+        if not max_structure and not current_structure:
             await ctx.send(f"Статитсика по запросу {author.name} в базе не найдена")
 
         if current_structure:

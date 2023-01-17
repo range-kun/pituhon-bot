@@ -18,7 +18,7 @@ services:
       - data_base
     command:  bash -c "alembic upgrade head && python -m app test"
     environment:
-      DB_HOST: discord_db_container
+      DB_HOST: data_base
       LOGGER_OUTPUT: container
     volumes:
       - /home/discord/logs:/app/logs

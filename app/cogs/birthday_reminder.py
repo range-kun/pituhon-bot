@@ -6,7 +6,8 @@ from discord import app_commands, User
 from discord.ext import commands, tasks
 from sqlalchemy.engine import Row
 
-from app.configuration import MAIN_CHANNEL_ID, MY_GUILD
+from app import NOTIFICATION_CHANNEL
+from app.configuration import MY_GUILD
 from app.log import logger
 from app.utils import tomorrow_text_type, BotSetter, catch_exception
 from app.utils.data.birthday_reminder import BirthdayDataReminder
@@ -25,10 +26,10 @@ class BirthdayCRUD(commands.Cog):
         if not birthday_users:
             await ctx.send("Нету пользователей в базе, для добавление воспользуйтесь командой /ba")
             return
-        user_embed = self.create_birthday_list_embed(birthday_users)
+        user_embed = await self.create_birthday_list_embed(birthday_users)
         await ctx.send(embed=user_embed)
 
-    def create_birthday_list_embed(self, birthday_users: list[Row]) -> Embed:
+    async def create_birthday_list_embed(self, birthday_users: list[Row]) -> Embed:
         user_embed = Embed(title="Список пользователей и их дни рождения")
         for user_id, birth_date in birthday_users:
             user = await self.bot.fetch_user(user_id)
@@ -179,9 +180,9 @@ class BirthdayReminder(BotSetter):
         return [await self.bot.fetch_user(user_id) for user_id in birthday_data_list]
 
     async def send_reminds(self, birthday_users: list[User]):
-        if MAIN_CHANNEL_ID is None:
+        if NOTIFICATION_CHANNEL is None:
             return
-        channel = self.bot.get_channel(MAIN_CHANNEL_ID)
+        channel = self.bot.get_channel(NOTIFICATION_CHANNEL)
         users = ", ".join(f"<@{user.id}>" for user in birthday_users)
         if len(birthday_users) > 1:
             await channel.send(

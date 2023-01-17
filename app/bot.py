@@ -3,7 +3,6 @@ from __future__ import annotations
 import random
 import re
 import urllib.parse
-from os import path
 
 import aiohttp
 import discord
@@ -14,8 +13,8 @@ from discord.ext import commands
 from discord.ext.commands import CommandError
 from loguru import logger
 
+from app.cogs.birthday_reminder import birthday_reminder
 from app.cogs.poll import PollMessageTrack
-from cogs.birthday_reminder import birthday_reminder
 from app.configuration import UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX
 from app.utils import today, send_yaml_text
 from app.utils.data.history_record import HistoryRecord
@@ -143,6 +142,9 @@ class Bot(commands.Bot):
             return f"<@{author_id}>: {message_content}"
 
     def parse_nahoj_message(self, message: discord.Message) -> str | None:
+        if not UMBRA_ID:
+            return
+
         msg_text = message.content.lower()
         nahoj_messages = [
             "Нахуй иди",
@@ -232,15 +234,13 @@ async def clear(ctx: commands.Context, amount: int = 10):
 @app_commands.guilds(MY_GUILD)
 async def cmds(ctx: commands.Context):
     output = ""
-    script_path = path.abspath(__file__)
-    description_file_path = path.dirname(path.dirname(script_path)) + "/commands_description.yaml"
 
     await ctx.send("**Список доступных команд**")
     try:
-        with open(description_file_path, encoding="utf-8") as file:
+        with open("commands_description.yaml", encoding="utf-8") as file:
             commands_description = yaml.safe_load(file)["commands_description"]
     except FileNotFoundError:
-        logger.opt(exception=True).error(f"Commands description with {description_file_path} not found")
+        logger.opt(exception=True).error("Commands description with not found")
         await ctx.send(r"При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯")
         return
     for command_name, description in commands_description.items():
@@ -279,4 +279,3 @@ async def f(ctx: commands.Context):
     soup = BeautifulSoup(text, "lxml")
     fact = soup.find("table", class_="text").find("td").text
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
-

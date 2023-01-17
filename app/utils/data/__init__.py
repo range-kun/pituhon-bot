@@ -4,7 +4,6 @@ from typing import Optional, Callable
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.cursor import LegacyCursorResult
-
 from app.configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
 metadata = sa.MetaData()

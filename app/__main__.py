@@ -13,6 +13,7 @@ if __name__ == "__main__":
     else:
         if mode == "test" and configuration.TEST_TOKEN:
             TOKEN = configuration.TEST_TOKEN
+
     try:
         bot.run(TOKEN)
     except Exception as e:

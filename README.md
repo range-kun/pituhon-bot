@@ -1,5 +1,5 @@
 # Discord Bot for Heroku
-![message_stats](Screenshot_1.png)
+![message_stats](Stats_screen.png)
 ### This bot was written for users of Russian servers, and send all data in russian. Although the code and database structure was written in English 
 
 ### General information

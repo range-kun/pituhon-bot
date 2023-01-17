@@ -4,6 +4,7 @@ import discord
 from discord.channel import TextChannel
 from discord.ext import tasks
 
+from app import NOTIFICATION_CHANNEL
 from app.cogs.message_stats import MessageChannel
 from app.log import logger
 from app.utils import is_last_month_day, is_sunday, catch_exception, BotSetter
@@ -30,7 +31,8 @@ class ChanelStats(BotSetter):
             return
         messages_champ, symbols_champ = self.collect_stats_for_day()
         self.update_max_stats_for_day()
-        await self.send_message_stats_for_day(messages_champ, symbols_champ)
+        if NOTIFICATION_CHANNEL is not None:
+            await self.send_message_stats_for_day(messages_champ, symbols_champ)
         logger.info("Successfully updated channel daily stats")
 
     @tasks.loop(time=weekly_time)
@@ -42,7 +44,8 @@ class ChanelStats(BotSetter):
         if not self.messages_for_week:
             return
         self.update_max_stats_for_week()
-        await self.send_message_stats_for_week(messages_info, symbols_info)
+        if NOTIFICATION_CHANNEL is not None:
+            await self.send_message_stats_for_week(messages_info, symbols_info)
         self.set_week_current_stats_to_zero()
         logger.info("Successfully updated channel weekly stats")
 
@@ -55,7 +58,8 @@ class ChanelStats(BotSetter):
         if not self.messages_for_month:
             return
         self.update_max_stats_for_month()
-        await self.send_message_stats_for_month(messages_info, symbols_info)
+        if NOTIFICATION_CHANNEL is not None:
+            await self.send_message_stats_for_month(messages_info, symbols_info)
         self.set_month_current_stats_to_zero()
         logger.info("Successfully updated channel month stats")
 
