@@ -16,7 +16,7 @@ services:
       context: .
     depends_on:
       - data_base
-    command:  bash -c "alembic upgrade head && python -m app test"
+    command:  bash -c "alembic upgrade head && python -m app"
     environment:
       DB_HOST: data_base
       LOGGER_OUTPUT: container
