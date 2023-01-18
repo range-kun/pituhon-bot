@@ -23,6 +23,7 @@ from app.utils.data.phrase import PhraseData
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
 from app.utils.message_stats_routine.user_stats_routine import user_stats
+from utils.youtube_limiter import youtube_links_counter
 
 HELLO_WORDS = ["ky", "ку"]
 ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
@@ -63,6 +64,8 @@ class Bot(commands.Bot):
         channel_stats.weekly_routine.start()
         channel_stats.monthly_routine.start()
         channel_stats.set_bot(bot)
+
+        youtube_links_counter.set_limits_to_zero.start()
 
         logger.info("Bot connected")
 
@@ -113,6 +116,11 @@ class Bot(commands.Bot):
             await message.delete()
             await message.channel.send(url_check)
 
+        if self.parse_youtube_link(message.content) and not youtube_links_counter.is_in_limit(message.author):
+            await message.delete()
+            await self.send_youtube_extend_links_message(message)
+            return
+
         range_lox_word = self.parse_range_lox_word(msg_text)
         if range_lox_word:
             await message.delete()
@@ -144,6 +152,15 @@ class Bot(commands.Bot):
             message_content = urllib.parse.unquote(msg_content)
             return f"<@{author_id}>: {message_content}"
 
+    @staticmethod
+    def parse_youtube_link(msg_contnet: str) -> bool:
+        youtube_check = re.match(
+            r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch"
+            r"\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$",
+            msg_contnet
+        )
+        return bool(youtube_check)
+
     def parse_nahoj_message(self, message: discord.Message) -> str | None:
         if not UMBRA_ID:
             return
@@ -162,10 +179,19 @@ class Bot(commands.Bot):
             if msg_text.startswith(PREFIX):
                 return random.choice(nahoj_messages)
 
+    @staticmethod
+    async def send_youtube_extend_links_message(message: discord.Message):
+        police_file_path = path.dirname(path.abspath(__file__)) + "\cat-wearing-police-suit.jpg"
+        police_file = discord.File(police_file_path)
+        await message.channel.send(
+            f"Воу воу вы превышаете количество линков на youtube в час гражданин. "
+            f"Соблюидайте скоростной лимит, пожалуйста, в {youtube_links_counter.max_youtube_limit} линк/час",
+            file=police_file
+        )
+
 
 bot = Bot()
 bot.remove_command("help")
-
 
 
 # add phrase
@@ -283,3 +309,16 @@ async def f(ctx: commands.Context):
     soup = BeautifulSoup(text, "lxml")
     fact = soup.find("table", class_="text").find("td").text
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
+
+
+@bot.hybrid_command(name="syll", description="Ограничение ссылок с YouTube (0 для отмены)")
+@commands.has_permissions(administrator=True)
+@app_commands.guilds(MY_GUILD)
+async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
+    if limit == 0:
+        youtube_links_counter.set_youtube_link_limit(None)
+        await ctx.send(f"Убран лимит на ссылки с youtube")
+        return
+
+    youtube_links_counter.set_youtube_link_limit(limit)
+    await ctx.send(f"Лимит ссылок с ютуба в час равен {limit}")

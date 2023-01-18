@@ -6,6 +6,9 @@
 - All configurations can be done with using config.py file and .env file
 - Log data would be stored in /home/discord/logs
 - Database would be created on your machine
+- Test mode to send all notification information to test channel with test bot
+  - To run bot in the test mode you will need additional test token, test bot. At docker-compose.yaml you'll need to add at the end of line 
+«command:  bash -c "alembic upgrade head && python -m app"» word «test» or run «python -m app test» without docker
 
 
 ### To begin with bot next steps required:
