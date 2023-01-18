@@ -35,6 +35,7 @@
 12. Available translation to different languages with Google Translate api
 13. Sending voice messages
 14. Get random fun fact
+15. Birthday reminder by schedule for users on channel, with commands to manage their birthdays.
 
 ### Thanks:
 Some parts of code been copy-pasted (or used as starting point) and then updated to be used inside my bot, here is the references: <br />
