@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import re
 import urllib.parse
+from os import path
 
 import aiohttp
 import discord
@@ -83,8 +84,10 @@ class Bot(commands.Bot):
 
         if isinstance(exception, discord.ext.commands.errors.CommandOnCooldown) or \
                 isinstance(exception, discord.app_commands.errors.CommandOnCooldown):
-            await ctx.send(f"{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю"
-                           f" все что смогу для тебя" % exception.retry_after)
+            await ctx.send(
+                f"{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю"
+                f" все что смогу для тебя" % exception.retry_after
+            )
         elif isinstance(exception, discord.ext.commands.errors.CommandNotFound):
             await ctx.send(f"Команда {ctx.message.content} не была обноружена")
         elif isinstance(exception, discord.ext.commands.errors.MissingRequiredArgument):
@@ -234,10 +237,11 @@ async def clear(ctx: commands.Context, amount: int = 10):
 @app_commands.guilds(MY_GUILD)
 async def cmds(ctx: commands.Context):
     output = ""
+    description_file_path = path.dirname(path.abspath(__file__)) + "/commands_description.yaml"
 
     await ctx.send("**Список доступных команд**")
     try:
-        with open("commands_description.yaml", encoding="utf-8") as file:
+        with open(description_file_path, encoding="utf-8") as file:
             commands_description = yaml.safe_load(file)["commands_description"]
     except FileNotFoundError:
         logger.opt(exception=True).error("Commands description with not found")

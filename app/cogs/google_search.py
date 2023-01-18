@@ -37,7 +37,7 @@ class Google(commands.Cog):
         except errors.NotFound:
             pass
 
-        if ctx.channel.id == MAIN_CHANNEL_ID and self.check_restricted_content(message):
+        if MAIN_CHANNEL_ID and ctx.channel.id == MAIN_CHANNEL_ID and self.check_restricted_content(message):
             return await ctx.send(
                 "На терретории данного канала в соответсвии со Ст. 6.21 КоАП РФ."
                 "пропоганда баб с письками запрещена. Но вы всегда можете "

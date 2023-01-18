@@ -37,20 +37,21 @@ class MessageStats(commands.Cog):
     def __init__(self, bot: DiscordBot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command(description="Установить канал для отправки сообщений.", name="set_chan")
     @commands.has_permissions(administrator=True)
-    async def set_stats_channel(self, ctx: commands.Context, *, text: str = None):
-        message_info = {"-m": "основной", "-t": "тестовый"}
-        channel_name = message_info.get(text)
-        if not channel_name or text is None:
-            await ctx.send(
-                "Указан неверный аргумент для отправки статистики, укажите -m (основной) или -t (тестовый)"
-            )
+    @app_commands.choices(option=[
+        app_commands.Choice(name="Основной канал", value="-m"),
+        app_commands.Choice(name="Тестовый канал", value="-t"),
+
+    ])
+    @app_commands.guilds(MY_GUILD)
+    async def set_stats_channel(self, ctx: commands.Context, *, option: Choice[str]):
+        if not MAIN_CHANNEL_ID and not TEST_CHANNEL_ID:
+            await ctx.send("Вы не указали id основоного и тестового канала, выполнение команды остановлено.")
             return
+        MessageChannel.set_stats_channel(option.value)
 
-        MessageChannel.set_stats_channel(text)
-
-        await ctx.send(f"Отправка ежедневной статистики сервера на {channel_name} канал")
+        await ctx.send(f"Отправка ежедневной статистики сервера на {option.name}")
 
     @commands.hybrid_command(description="Получить статистику сообщений", name="stats")
     @app_commands.choices(option=[
