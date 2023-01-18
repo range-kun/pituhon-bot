@@ -23,7 +23,7 @@ from app.utils.data.phrase import PhraseData
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
 from app.utils.message_stats_routine.user_stats_routine import user_stats
-from utils.youtube_limiter import youtube_links_counter
+from app.utils.youtube_limiter import youtube_links_counter
 
 HELLO_WORDS = ["ky", "ку"]
 ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
