@@ -20,6 +20,7 @@
     - Redis database credentials
     - Google search token (more info here https://developers.google.com/webmaster-tools/search-console-api/v1/configure 
    or here https://www.youtube.com/watch?v=-uy4L4P1Ujs)
+    - ID's for your server channel, main channel for bot notifications and test channel (last two is optional)
 3. Run: docker-compose build and docker-compose up, this would create database on your machine and apply migrations and start your bot
 
 ### Available  features:
