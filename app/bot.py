@@ -111,15 +111,15 @@ class Bot(commands.Bot):
 
         await self.process_commands(message)
 
-        url_check = self.parse_url_link(message.content, message.author.id)
-        if url_check:
-            await message.delete()
-            await message.channel.send(url_check)
-
         if self.parse_youtube_link(message.content) and not youtube_links_counter.is_in_limit(message.author):
             await message.delete()
             await self.send_youtube_extend_links_message(message)
             return
+
+        url_check = self.parse_url_link(message.content, message.author.id)
+        if url_check:
+            await message.delete()
+            await message.channel.send(url_check)
 
         range_lox_word = self.parse_range_lox_word(msg_text)
         if range_lox_word:
@@ -181,11 +181,13 @@ class Bot(commands.Bot):
 
     @staticmethod
     async def send_youtube_extend_links_message(message: discord.Message):
-        police_file_path = path.dirname(path.abspath(__file__)) + "\cat-wearing-police-suit.jpg"
+        police_file_path = path.dirname(path.abspath(__file__)) + "/cat-wearing-police-suit.jpg"
         police_file = discord.File(police_file_path)
+
         await message.channel.send(
-            f"Воу воу вы превышаете количество линков на youtube в час гражданин. "
-            f"Соблюидайте скоростной лимит, пожалуйста, в {youtube_links_counter.max_youtube_limit} линк/час",
+            f"Воу воу вы превышаете количество линков на YouTube в час гражданин. "
+            f"Соблюидайте скоростной лимит, пожалуйста, в {youtube_links_counter.max_youtube_limit} линк/час. "
+            f"Счетчик обнулится примерно через {youtube_links_counter.get_time_to_reset()} минут.",
             file=police_file
         )
 
