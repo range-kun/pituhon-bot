@@ -1,42 +1,26 @@
 from __future__ import annotations
 
-from datetime import datetime, time
-
-from discord.ext import tasks
-
 from app.log import logger
-from app.utils import is_last_month_day, is_sunday, catch_exception
+from app.utils import catch_exception
 from app.utils.message_stats_routine import UserStatsForCurrentDay, message_day_counter
 from app.utils.data.user_stats import UserOverallStats, UserStatsForCurrentWeek, UserStatsForCurrentMonth, \
     UserMaxStats, UserCurrentStats
 
 
 class UserStats:
-    tz = datetime.now().astimezone().tzinfo
-    daily_time = time(hour=23, tzinfo=tz)
-    weekly_time = time(hour=23, minute=3, tzinfo=tz)
-    monthly_time = time(hour=23, minute=6, tzinfo=tz)
-
-    @tasks.loop(time=daily_time)
     @catch_exception
     async def daily_routine(self):
         self.update_users_stats_by_end_of_day()
         self.update_user_max_stats_for_period("day")
         logger.info("Successfully updated user daily stats")
 
-    @tasks.loop(time=weekly_time)
     @catch_exception
     async def weekly_routine(self):
-        if not is_sunday():
-            return
         self.update_user_max_stats_for_period("week")
         logger.info("Successfully updated user weekly stats")
 
-    @tasks.loop(time=monthly_time)
     @catch_exception
     async def monthly_routine(self):
-        if not is_last_month_day():
-            return
         self.update_user_max_stats_for_period("month")
         logger.info("Successfully updated user month stats")
 

@@ -3,14 +3,15 @@ from datetime import datetime, time
 import discord
 from discord import ButtonStyle, Embed, ui, Interaction
 from discord import app_commands, User
-from discord.ext import commands, tasks
+from discord.ext import commands
 from sqlalchemy.engine import Row
 
 from app import NOTIFICATION_CHANNEL
 from app.configuration import MY_GUILD
 from app.log import logger
-from app.utils import tomorrow_text_type, BotSetter, catch_exception
+from app.utils import  BotSetter, catch_exception
 from app.utils.data.birthday_reminder import BirthdayDataReminder
+from app.utils.webhooks import webhook_sender
 
 
 class BirthdayCRUD(commands.Cog):
@@ -164,7 +165,6 @@ class BirthdayReminder(BotSetter):
     tz = datetime.now().astimezone().tzinfo
     daily_time = time(hour=23, minute=25, tzinfo=tz)
 
-    @tasks.loop(time=daily_time)
     @catch_exception
     async def remind_birthday_routine(self):
         birthday_data_query = BirthdayDataReminder.get_birthdays_for_next_day()
@@ -172,27 +172,29 @@ class BirthdayReminder(BotSetter):
             return
 
         birthday_data_list = [user_id[0] for user_id in birthday_data_query]
-        birthday_users = await self.get_users(birthday_data_list)
-        await self.send_reminds(birthday_users)
+        await self.send_reminds(birthday_data_list)
         logger.info("Successfully send reminds for tomorrow")
 
-    async def get_users(self, birthday_data_list: list[int]) -> list[User]:
-        return [await self.bot.fetch_user(user_id) for user_id in birthday_data_list]
-
-    async def send_reminds(self, birthday_users: list[User]):
+    async def send_reminds(self, birthday_users: list[int]):
         if NOTIFICATION_CHANNEL is None:
             return
-        channel = self.bot.get_channel(NOTIFICATION_CHANNEL)
-        users = ", ".join(f"<@{user.id}>" for user in birthday_users)
+        content = self.get_content(birthday_users)
+        await webhook_sender.send_data(
+            content=content
+        )
+
+    def get_content(self, birthday_users: list[int]) -> str:
+        users = ", ".join(f"<@{user_id}>" for user_id in birthday_users)
         if len(birthday_users) > 1:
-            await channel.send(
-                f"{tomorrow_text_type()} у {users} день рождения 🎂, давайте мы их дружно поздравим."
+            content = (
+                f"Сегодня у {users} день рождения"
+                f" 🎂, давайте мы их дружно поздравим."
             )
         else:
-            await channel.send(
-                f"{tomorrow_text_type()} у {users} день рождение, похлопаем нашему имениннику 🥳."
+            content = (
+                f"Сегодня у {users} день рождение, похлопаем нашему имениннику 🥳."
             )
-
+        return content
 
 birthday_reminder = BirthdayReminder()
 

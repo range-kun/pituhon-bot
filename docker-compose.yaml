@@ -11,16 +11,48 @@ services:
       - discord_db_volume:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_LOCAL_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   app:
     build:
       context: .
     depends_on:
-      - data_base
+      data_base:
+        condition: service_healthy
     command:  bash -c "alembic upgrade head && python -m app"
     environment:
       DB_HOST: data_base
       LOGGER_OUTPUT: container
     volumes:
       - /home/discord/logs:/app/logs
+
+
+  worker:
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 70M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+    restart: always
+    build: .
+    command: celery -A app.tasks worker --loglevel=info
+    depends_on:
+    - app
+
+  beat:
+    restart: always
+    build: .
+    command: celery -A app.tasks beat --loglevel=info
+    depends_on:
+      - app
+
 volumes:
   discord_db_volume:

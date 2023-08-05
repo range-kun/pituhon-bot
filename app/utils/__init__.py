@@ -1,11 +1,15 @@
-import calendar
+from __future__ import annotations
+
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 
+import redis
 from discord import Member
 from discord.channel import TextChannel
 from discord.ext import commands
 
 from app.log import logger
+from app.configuration import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
 
 class BotSetter:
@@ -13,16 +17,6 @@ class BotSetter:
 
     def set_bot(self, bot):
         self.bot = bot
-
-
-def is_last_month_day() -> bool:
-    this_day = datetime.now()
-    last_month_day = calendar.monthrange(this_day.year, this_day.month)[1]
-    return last_month_day == this_day.day
-
-
-def is_sunday() -> datetime.date:
-    return datetime.today().strftime("%A") == "Sunday"
 
 
 def yesterday() -> datetime.date:
@@ -33,12 +27,8 @@ def today() -> datetime.date:
     return datetime.date(datetime.now())
 
 
-def tomorrow() -> datetime.date:
-    return datetime.date(datetime.now() + timedelta(days=1))
-
-
 def tomorrow_text_type() -> str:
-    return tomorrow().strftime("%Y-%m-%d")
+    return today().strftime("%Y-%m-%d")
 
 
 def fetch_all_channel_users(channel: TextChannel) -> list[Member]:
@@ -60,3 +50,12 @@ def catch_exception(method):
         else:
             return result
     return wrapper
+
+
+@contextmanager
+def redis_connection_manager(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD):
+    connection = redis.Redis(host=host, port=port, password=password, decode_responses=True)
+    try:
+        yield connection
+    finally:
+        connection.close()

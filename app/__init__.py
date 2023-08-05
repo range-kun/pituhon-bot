@@ -1,5 +1,3 @@
-import sys
-
 from app import configuration
 from app import log
 
@@ -17,11 +15,9 @@ def get_notification_channel(bot_mode: str | None = None) -> int | None:
     return channel_id
 
 
-try:
-    mode = sys.argv[1]
-except IndexError:
-    NOTIFICATION_CHANNEL = get_notification_channel()
-else:
-    if mode == "test" and configuration.TEST_TOKEN:
+if configuration.DEBUG is True:
+    if configuration.TEST_TOKEN:
         TOKEN = configuration.TEST_TOKEN
-        NOTIFICATION_CHANNEL = get_notification_channel("test")
+    NOTIFICATION_CHANNEL = get_notification_channel("test")
+else:
+    NOTIFICATION_CHANNEL = get_notification_channel()

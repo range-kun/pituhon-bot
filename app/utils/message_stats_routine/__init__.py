@@ -12,7 +12,7 @@ from redis.commands.json.path import Path
 
 from app.configuration import REDIS_PORT, REDIS_HOST, REDIS_PASSWORD
 from app.log import logger
-from app.utils import catch_exception
+from app.utils import catch_exception, redis_connection_manager
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):
@@ -64,17 +64,19 @@ class MessageDayCounter:
         logger.debug("Successfully send data to redis")
         self.set_stats_to_zero()
 
-    @tasks.loop(time=execution_time)
     @catch_exception
     async def delete_redis_info(self):
-        self.redis_connection.delete("symbols", "authors", "messages")
+        with redis_connection_manager() as redis_connection:
+            redis_connection.delete("symbols", "authors", "messages")
         logger.info("Data from redis have been set to 0")
 
     async def save_info_to_redis(self):
-        self.redis_connection.set("messages", self.messages)
-        self.redis_connection.set("symbols", self.symbols)
         authors = json.dumps(self.authors, cls=EnhancedJSONEncoder)
-        self.redis_connection.json().set("authors", Path.root_path(), authors)
+
+        with redis_connection_manager() as redis_connection:
+            redis_connection.set("messages", self.messages)
+            redis_connection.set("symbols", self.symbols)
+            redis_connection.json().set("authors", Path.root_path(), authors)
 
     def set_stats_to_zero(self):
         self._messages = 0
@@ -83,18 +85,21 @@ class MessageDayCounter:
 
     @property
     def messages(self) -> int:
-        redis_messages = self.redis_connection.get("messages") or 0
+        with redis_connection_manager() as redis_connection:
+            redis_messages = redis_connection.get("messages") or 0
         return self._messages + int(redis_messages)
 
     @property
     def symbols(self) -> int:
-        redis_symbols = self.redis_connection.get("symbols") or 0
+        with redis_connection_manager() as redis_connection:
+            redis_symbols = redis_connection.get("symbols") or 0
         return self._symbols + int(redis_symbols)
 
     @property
     def authors(self) -> dict[int: UserStatsForCurrentDay]:
         try:
-            redis_authors = json.loads(self.redis_connection.json().get("authors"))
+            with redis_connection_manager() as redis_connection:
+                redis_authors = json.loads(redis_connection.json().get("authors"))
         except TypeError:
             redis_authors = {}
 

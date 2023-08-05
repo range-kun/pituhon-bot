@@ -9,21 +9,22 @@ import aiohttp
 import discord
 import yaml
 from bs4 import BeautifulSoup
-from discord import app_commands, errors
+from discord import app_commands, errors, Forbidden
 from discord.ext import commands
 from discord.ext.commands import CommandError
 from loguru import logger
 
+from app import NOTIFICATION_CHANNEL, TOKEN
 from app.cogs.birthday_reminder import birthday_reminder
 from app.cogs.poll import PollMessageTrack
-from app.configuration import UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX
+from app.configuration import (
+    UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX)
 from app.utils import today, send_yaml_text
 from app.utils.data.history_record import HistoryRecord
 from app.utils.data.phrase import PhraseData
 from app.utils.message_stats_routine import message_day_counter
-from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
-from app.utils.message_stats_routine.user_stats_routine import user_stats
 from app.utils.youtube_limiter import youtube_links_counter
+from app.utils.webhooks import get_token_hash, fetch_web_hook_url, verify_url, set_web_hook_url
 
 HELLO_WORDS = ["ky", "ку"]
 ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
@@ -50,23 +51,12 @@ class Bot(commands.Bot):
         await self.tree.sync(guild=MY_GUILD)
 
     async def on_ready(self):
-        message_day_counter.counter_routine.start()
-        message_day_counter.delete_redis_info.start()
-
         birthday_reminder.set_bot(bot)
-        birthday_reminder.remind_birthday_routine.start()
 
-        user_stats.daily_routine.start()
-        user_stats.weekly_routine.start()
-        user_stats.monthly_routine.start()
-
-        channel_stats.daily_routine.start()
-        channel_stats.weekly_routine.start()
-        channel_stats.monthly_routine.start()
-        channel_stats.set_bot(bot)
-
+        message_day_counter.counter_routine.start()
         youtube_links_counter.set_limits_to_zero.start()
 
+        await setup_web_hook()
         logger.info("Bot connected")
 
     async def on_reaction_add(self, reaction, user):
@@ -324,3 +314,20 @@ async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
 
     youtube_links_counter.set_youtube_link_limit(limit)
     await ctx.send(f"Лимит ссылок с ютуба в час равен {limit}")
+
+
+async def setup_web_hook():
+    if not NOTIFICATION_CHANNEL:
+        return
+    token_hash = get_token_hash(TOKEN)
+    url = fetch_web_hook_url(token_hash)
+    channel = bot.get_channel(NOTIFICATION_CHANNEL)
+    if url and await verify_url(url, channel, bot):
+        return
+
+    try:
+        webhook = await channel.create_webhook(name='Statistic')
+    except Forbidden:
+        logger.warning("Web Hook not created please provide this permission for the bot")
+    else:
+        set_web_hook_url(webhook.url, token_hash)

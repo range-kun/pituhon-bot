@@ -1,30 +1,21 @@
-from datetime import datetime, time
-
+import aiohttp
 import discord
-from discord.channel import TextChannel
-from discord.ext import tasks
 
-from app import NOTIFICATION_CHANNEL
-from app.cogs.message_stats import MessageChannel
+from app import NOTIFICATION_CHANNEL, TOKEN
 from app.log import logger
-from app.utils import is_last_month_day, is_sunday, catch_exception, BotSetter
+from app.utils import catch_exception
 from app.utils.data.channel_stats import ServerStats
 from app.utils.message_stats_routine import message_day_counter
+from app.utils.webhooks import webhook_sender
 
 
-class ChanelStats(BotSetter):
-    tz = datetime.now().astimezone().tzinfo
-    daily_time = time(hour=23, minute=10, tzinfo=tz)
-    weekly_time = time(hour=23, minute=13, tzinfo=tz)
-    monthly_time = time(hour=23, minute=16, tzinfo=tz)
-
+class ChanelStats:
     def __init__(self):
         self.symbols_for_month = 0
         self.messages_for_month = 0
         self.symbols_for_week = 0
         self.messages_for_week = 0
 
-    @tasks.loop(time=daily_time)
     @catch_exception
     async def daily_routine(self):
         if not message_day_counter.messages:
@@ -35,11 +26,9 @@ class ChanelStats(BotSetter):
             await self.send_message_stats_for_day(messages_champ, symbols_champ)
         logger.info("Successfully updated channel daily stats")
 
-    @tasks.loop(time=weekly_time)
+
     @catch_exception
     async def weekly_routine(self):
-        if not is_sunday():
-            return
         messages_info, symbols_info = self.collect_stats_for_week()
         if not self.messages_for_week:
             return
@@ -49,11 +38,8 @@ class ChanelStats(BotSetter):
         self.set_week_current_stats_to_zero()
         logger.info("Successfully updated channel weekly stats")
 
-    @tasks.loop(time=monthly_time)
     @catch_exception
     async def monthly_routine(self):
-        if not is_last_month_day():
-            return
         messages_info, symbols_info = self.collect_stats_for_month()
         if not self.messages_for_month:
             return
@@ -112,8 +98,7 @@ class ChanelStats(BotSetter):
             symbols_info=symbols_info,
             period_info=("Всего за день", "Информация по серверу за 24 часа"),
         )
-
-        await self.channel().send(embed=output)
+        await webhook_sender.send_data(embed=output)
 
     async def send_message_stats_for_week(self, messages_info: tuple[int, int], symbols_info: tuple[int, int]):
 
@@ -123,8 +108,7 @@ class ChanelStats(BotSetter):
             symbols_info=symbols_info,
             period_info=("неделю", "Еженедельная информация"),
         )
-
-        await self.channel().send(embed=output)
+        await webhook_sender.send_data(embed=output)
 
     async def send_message_stats_for_month(self,  messages_info: tuple[int, int], symbols_info: tuple[int, int]):
 
@@ -134,8 +118,7 @@ class ChanelStats(BotSetter):
             symbols_info=symbols_info,
             period_info=("месяц", "Ежемесячная информация"),
         )
-
-        await self.channel().send(embed=output)
+        await webhook_sender.send_data(embed=output)
 
     async def create_output_message(
             self,
@@ -150,11 +133,11 @@ class ChanelStats(BotSetter):
         amount_of_all_messages, amount_of_all_symbols = channel_info
         name_of_period, description_of_period = period_info
 
-        user_name_with_most_messages = await self.bot.fetch_user(user_with_most_messages)
-        user_name_with_most_messages = user_name_with_most_messages.name
-
-        user_name_with_most_symbols = await self.bot.fetch_user(user_with_most_symbols)
-        user_name_with_most_symbols = user_name_with_most_symbols.name
+        champ_stats = await self.fetch_user_nickname(
+            {user_with_most_messages, user_with_most_symbols}
+        )
+        user_name_with_most_messages = champ_stats[user_with_most_messages]
+        user_name_with_most_symbols = champ_stats[user_with_most_symbols]
 
         channel_info = f"Кол-во сообщений  =>{amount_of_all_messages}\n" \
                        f"Кол-во символов  =>{amount_of_all_symbols}"
@@ -174,10 +157,23 @@ class ChanelStats(BotSetter):
             emb.add_field(name=k, value=v, inline=False)
         return emb
 
-    def channel(self) -> TextChannel:
-        channel_id = MessageChannel.get_stats_channel()
-        channel = self.bot.get_channel(channel_id)
-        return channel
+    @staticmethod
+    async def fetch_user_nickname(users_id: set[int]) -> dict[int, str]:
+        discord_users_url = "https://discord.com/api/users/{}"
+        dict_on_names = {}
+        headers = {'Authorization': f'Bot {TOKEN}'}
 
+        async with aiohttp.ClientSession() as session:
+            for user_id in users_id:
+                async with session.get(
+                        discord_users_url.format(user_id), headers=headers
+                ) as response:
+                    data = await response.json()
+                    try:
+                        nickname = data["username"]
+                    except KeyError:
+                        nickname = 'No Info'
+                    dict_on_names[user_id] = nickname
+        return dict_on_names
 
 channel_stats = ChanelStats()

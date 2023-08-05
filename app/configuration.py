@@ -7,11 +7,13 @@ PREFIX = "?"
 MAX_HIST_RETRIEVE_RECORDS = 10
 VOTE_TIME = 60  # minutes
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
-TEST_CHANNEL_ID = int(config("TEST_CHANNEL_ID", default=None))
-MAIN_CHANNEL_ID = int(config("MAIN_CHANEL_ID", default=None))
-SERVER_ID = int(config("SERVER_ID"))
+TEST_CHANNEL_ID = config("TEST_CHANNEL_ID", default=0, cast=int)
+MAIN_CHANNEL_ID =config("MAIN_CHANEL_ID", default=0, cast=int)
+SERVER_ID = config("SERVER_ID", cast=int, default=0)
 MY_GUILD = discord.Object(id=SERVER_ID)
-UMBRA_ID = int(config("UMBRA_ID", default=None))
+UMBRA_ID = config("UMBRA_ID", default=0, cast=int)
+DEBUG = config("DEBUG", default=False, cast=bool)
+SECRET_KEY = config("SECRET_KEY", default='test_secret_key')
 
 
 # Discord token

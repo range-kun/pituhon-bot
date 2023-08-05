@@ -9,49 +9,17 @@ from discord.ext import commands
 from discord.ext.commands.bot import Bot as DiscordBot
 from tabulate import tabulate
 
-from app import NOTIFICATION_CHANNEL
-from app.configuration import MAIN_CHANNEL_ID, TEST_CHANNEL_ID, MY_GUILD
+from app.configuration import  MY_GUILD
 from app.utils.data import Data
 from app.utils.data.channel_stats import ServerStats
 from app.utils.data.user_stats import UserCurrentStats, UserMaxStats, UserOverallStats
 from app.utils.message_stats_routine import message_day_counter
 
 
-class MessageChannel:
-    stats_channel = NOTIFICATION_CHANNEL
-
-    @classmethod
-    def get_stats_channel(cls) -> int | None:
-        return cls.stats_channel
-
-    @classmethod
-    def set_stats_channel(cls, text: str):
-        if text == "-m":
-            cls.stats_channel = MAIN_CHANNEL_ID
-        elif text == "-t":
-            cls.stats_channel = TEST_CHANNEL_ID
-
-
 class MessageStats(commands.Cog):
 
     def __init__(self, bot: DiscordBot):
         self.bot = bot
-
-    @commands.hybrid_command(description="Установить канал для отправки сообщений.", name="set_chan")
-    @commands.has_permissions(administrator=True)
-    @app_commands.choices(option=[
-        app_commands.Choice(name="Основной канал", value="-m"),
-        app_commands.Choice(name="Тестовый канал", value="-t"),
-
-    ])
-    @app_commands.guilds(MY_GUILD)
-    async def set_stats_channel(self, ctx: commands.Context, *, option: Choice[str]):
-        if not MAIN_CHANNEL_ID and not TEST_CHANNEL_ID:
-            await ctx.send("Вы не указали id основоного и тестового канала, выполнение команды остановлено.")
-            return
-        MessageChannel.set_stats_channel(option.value)
-
-        await ctx.send(f"Отправка ежедневной статистики сервера на {option.name}")
 
     @commands.hybrid_command(description="Получить статистику сообщений", name="stats")
     @app_commands.choices(option=[
