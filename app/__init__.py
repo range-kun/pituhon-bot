@@ -14,6 +14,7 @@ def get_notification_channel(bot_mode: str | None = None) -> int | None:
         log.logger.info("Notification channel not selected")
     return channel_id
 
+TOKEN = configuration.TOKEN
 
 if configuration.DEBUG is True:
     if configuration.TEST_TOKEN:
