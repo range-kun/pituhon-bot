@@ -1,24 +1,24 @@
 # Discord Bot for Heroku
 ![message_stats](Stats_screen.png)
-### This bot was written for users of Russian servers, and send all data in russian. Although the code and database structure was written in English 
+### This bot was written for users of Russian servers, and send all data in russian. Although the code and database structure was written in English
 
 ### General information
 - All configurations can be done with using config.py file and .env file
 - Log data would be stored in /home/discord/logs
 - Database would be created on your machine
 - Test mode to send all notification information to test channel with test bot
-  - To run bot in the test mode you will need additional test token, test bot. At docker-compose.yaml you'll need to add at the end of line 
+  - To run bot in the test mode you will need additional test token, test bot. At docker-compose.yaml you'll need to add at the end of line
 «command:  bash -c "alembic upgrade head && python -m app"» word «test» or run «python -m app test» without docker
 
 
 ### To begin with bot next steps required:
 1. Make sure you have docker and docker-compose installed on your machine
 2. Create .env file and add all data as in .env-template
-    - You need to get discord bot token 
-    - Create discord application with support of application.commands,  administrator privileges (optional) 
+    - You need to get discord bot token
+    - Create discord application with support of application.commands,  administrator privileges (optional)
    and Privileged Gateway Intents enabled
     - Redis database credentials
-    - Google search token (more info here https://developers.google.com/webmaster-tools/search-console-api/v1/configure 
+    - Google search token (more info here https://developers.google.com/webmaster-tools/search-console-api/v1/configure
    or here https://www.youtube.com/watch?v=-uy4L4P1Ujs)
     - ID's for your server channel, main channel for bot notifications and test channel (last two is optional)
 3. Run: docker-compose build and docker-compose up, this would create database on your machine and apply migrations and start your bot
@@ -26,8 +26,8 @@
 ### Available  features:
 1. Support of slash commands with description
 2. Basic admin commands: ban, kick, mute, unmute
-3. Deleting messages using the ?clear command 
-4. Getting a random picture using Google engine 
+3. Deleting messages using the ?clear command
+4. Getting a random picture using Google engine
 5. Possibility of search queries in Google
 6. Creating poll messages, what will send results at the end of the vote time.
 7. Extensive opportunities to calculate the statistics of messages. This bot can keep message and symbols stats.

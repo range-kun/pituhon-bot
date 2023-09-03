@@ -1,16 +1,16 @@
 from contextlib import contextmanager
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.cursor import LegacyCursorResult
-from app.configuration import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+from sqlalchemy.orm import sessionmaker
+
+from app.configuration import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
 
 metadata = sa.MetaData()
 
 
 class Data:
-
     table: Optional[sa.Table] = None
     db: Optional[sa.engine.Engine] = None
     metadata = metadata
@@ -30,7 +30,7 @@ class Data:
     @classmethod
     def connect_to_db(cls):
         cls.db = sa.create_engine(
-            url=f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
+            url=f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}",
         )
 
     @classmethod
@@ -45,7 +45,12 @@ class Data:
         return cls.db
 
     @classmethod
-    def insert(cls, *, connection=None, **data,):
+    def insert(
+        cls,
+        *,
+        connection=None,
+        **data,
+    ):
         cls.get_table()
         cls.execute(statement=lambda: cls.table.insert(values=data), connection=connection)
 
@@ -73,20 +78,20 @@ class Data:
     @contextmanager
     def do_with_session(cls):
         cls.get_engine()
-        Session = sessionmaker(cls.db)
+        Session = sessionmaker(cls.db)  # noqa N806
         session = Session()
         yield session
         session.commit()
 
     @classmethod
     def get_data(
-            cls,
-            *fields,
-            condition=None,
-            limit: int = None,
-            offset: int = None,
-            order=None,
-            connection=None
+        cls,
+        *fields,
+        condition=None,
+        limit: int = None,
+        offset: int = None,
+        order=None,
+        connection=None,
     ) -> LegacyCursorResult:
         table = cls.get_table()
         fields = [table.c[field] for field in fields]
@@ -113,13 +118,9 @@ class Data:
     @classmethod
     def execute(cls, *, statement: Callable, connection=None):
         if connection is not None:
-            result = connection.execute(
-                statement()
-            )
+            result = connection.execute(statement())
         else:
             with cls.db.begin() as connect:
-                result = connect.execute(
-                    statement()
-                )
+                result = connect.execute(statement())
 
         return result

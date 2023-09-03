@@ -8,7 +8,6 @@ from app.utils.data import Data
 
 
 class PhraseData(Data):
-
     @classmethod
     def create_table(cls) -> sa.Table:
         return sa.Table(
@@ -16,7 +15,7 @@ class PhraseData(Data):
             cls.metadata,
             sa.Column("id", sa.Integer, primary_key=True),
             sa.Column("author", sa.TEXT),
-            sa.Column("text", sa.TEXT)
+            sa.Column("text", sa.TEXT),
         )
 
     @classmethod

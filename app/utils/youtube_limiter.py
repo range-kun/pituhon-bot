@@ -6,7 +6,6 @@ from discord.ext import tasks
 
 
 class YouTubeLinksCounter:
-
     def __init__(self):
         self.youtube_limits: dict[int, int] = defaultdict(int)
         self.max_youtube_limit = None

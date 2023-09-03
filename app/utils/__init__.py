@@ -8,8 +8,8 @@ from discord import Member
 from discord.channel import TextChannel
 from discord.ext import commands
 
+from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from app.log import logger
-from app.configuration import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
 
 class BotSetter:
@@ -46,9 +46,12 @@ def catch_exception(method):
         try:
             result = await method(cls, *args, **kwargs)
         except Exception as e:
-            logger.opt(exception=True).error(f"Exception was caught in {method.__qualname__}: " + str(e))
+            logger.opt(exception=True).error(
+                f"Exception was caught in {method.__qualname__}: " + str(e),
+            )
         else:
             return result
+
     return wrapper
 
 

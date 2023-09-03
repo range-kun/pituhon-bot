@@ -10,7 +10,7 @@ from discord import Message
 from discord.ext import tasks
 from redis.commands.json.path import Path
 
-from app.configuration import REDIS_PORT, REDIS_HOST, REDIS_PASSWORD
+from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from app.log import logger
 from app.utils import catch_exception, redis_connection_manager
 
@@ -31,7 +31,10 @@ class UserStatsForCurrentDay:
         if isinstance(other, UserStatsForCurrentDay):
             amount_of_symbols = self.amount_of_symbols + other.amount_of_symbols
             amount_of_messages = self.amount_of_messages + other.amount_of_messages
-            return UserStatsForCurrentDay(amount_of_messages=amount_of_messages, amount_of_symbols=amount_of_symbols)
+            return UserStatsForCurrentDay(
+                amount_of_messages=amount_of_messages,
+                amount_of_symbols=amount_of_symbols,
+            )
         raise TypeError(f"Unsupported type of data {type(other)} for operand +")
 
 
@@ -96,14 +99,17 @@ class MessageDayCounter:
         return self._symbols + int(redis_symbols)
 
     @property
-    def authors(self) -> dict[int: UserStatsForCurrentDay]:
+    def authors(self) -> dict[int:UserStatsForCurrentDay]:
         try:
             with redis_connection_manager() as redis_connection:
                 redis_authors = json.loads(redis_connection.json().get("authors"))
         except TypeError:
             redis_authors = {}
 
-        redis_authors = {int(user_id): UserStatsForCurrentDay(**stats) for user_id, stats in redis_authors.items()}
+        redis_authors = {
+            int(user_id): UserStatsForCurrentDay(**stats)
+            for user_id, stats in redis_authors.items()
+        }
         users_id = set(redis_authors) | set(self._authors)
 
         authors = {}
@@ -135,15 +141,21 @@ class MessageDayCounter:
 
     def get_server_champ_for_today(self) -> list[tuple]:
         authors = self.authors
-        user_id_with_most_messages = max(authors, key=lambda user: self.authors[user].amount_of_messages)
+        user_id_with_most_messages = max(
+            authors,
+            key=lambda user: self.authors[user].amount_of_messages,
+        )
         user_with_most_messages = authors[user_id_with_most_messages].amount_of_messages
 
-        user_id_with_most_symbols = max(authors, key=lambda user: self.authors[user].amount_of_symbols)
+        user_id_with_most_symbols = max(
+            authors,
+            key=lambda user: self.authors[user].amount_of_symbols,
+        )
         user_with_most_symbols = authors[user_id_with_most_symbols].amount_of_symbols
-        return [(user_id_with_most_messages, user_with_most_messages),
-                (user_id_with_most_symbols, user_with_most_symbols)
-                ]
+        return [
+            (user_id_with_most_messages, user_with_most_messages),
+            (user_id_with_most_symbols, user_with_most_symbols),
+        ]
 
 
 message_day_counter = MessageDayCounter()
-

@@ -6,11 +6,14 @@ from sqlalchemy.engine import Connection, Row
 from app.log import logger
 from app.utils import today
 from app.utils.data import Data
-from app.utils.data.user_stats import UserStatsForCurrentWeek, UserStatsForCurrentMonth, UserMaxStats
+from app.utils.data.user_stats import (
+    UserMaxStats,
+    UserStatsForCurrentMonth,
+    UserStatsForCurrentWeek,
+)
 
 
 class MaxServerMessagesForPeriod(Data):
-
     @classmethod
     def create_table(cls) -> sa.Table:
         return sa.Table(
@@ -18,12 +21,11 @@ class MaxServerMessagesForPeriod(Data):
             cls.metadata,
             sa.Column("period", sa.VARCHAR),
             sa.Column("date", sa.DATE),
-            sa.Column("amount", sa.INTEGER)
+            sa.Column("amount", sa.INTEGER),
         )
 
 
 class MaxServerSymbolsForPeriod(Data):
-
     @classmethod
     def create_table(cls) -> sa.Table:
         return sa.Table(
@@ -31,21 +33,27 @@ class MaxServerSymbolsForPeriod(Data):
             cls.metadata,
             sa.Column("period", sa.VARCHAR),
             sa.Column("date", sa.DATE),
-            sa.Column("amount", sa.INTEGER)
+            sa.Column("amount", sa.INTEGER),
         )
 
 
 class ServerStats(Data):
     @classmethod
     def compare_and_update_max_stats(
-            cls,
-            period: str,
-            current_amount_of_messages: int,
-            current_amount_of_symbols: int
+        cls,
+        period: str,
+        current_amount_of_messages: int,
+        current_amount_of_symbols: int,
     ):
         try:
-            max_amount_messages_for_period: int = cls.get_max_stats_for_period(period, MaxServerMessagesForPeriod)[0]
-            max_amount_symbols_for_period: int = cls.get_max_stats_for_period(period, MaxServerSymbolsForPeriod)[0]
+            max_amount_messages_for_period: int = cls.get_max_stats_for_period(
+                period,
+                MaxServerMessagesForPeriod,
+            )[0]
+            max_amount_symbols_for_period: int = cls.get_max_stats_for_period(
+                period,
+                MaxServerSymbolsForPeriod,
+            )[0]
 
         except TypeError:  # data not exists in database
             cls.insert_new_max_stats(period, current_amount_of_messages, MaxServerMessagesForPeriod)
@@ -54,7 +62,7 @@ class ServerStats(Data):
 
         except Exception as e:
             logger.opt(exception=True).error(
-                f"Exception occurred {str(e)} while fetching data from databases"
+                f"Exception occurred {str(e)} while fetching data from databases",
             )
             return "Извините произошла ошибка при попытке получить данных с сервера"
 
@@ -70,8 +78,10 @@ class ServerStats(Data):
 
     @staticmethod
     def get_max_stats_for_period(period: str, data_class: Type[Data]) -> Row:
-
-        result = data_class.get_data("amount", condition=(data_class.get_table().c.period == period))
+        result = data_class.get_data(
+            "amount",
+            condition=(data_class.get_table().c.period == period),
+        )
         result = result.fetchone()
         return result
 
@@ -80,13 +90,23 @@ class ServerStats(Data):
         data_class.update(
             condition=(data_class.get_table().c.period == period),
             amount=amount,
-            date=today()
+            date=today(),
         )
 
     @classmethod
     def fetch_all_data(cls, connection: Connection):
-        messages = MaxServerMessagesForPeriod.get_data("period", "date", "amount", connection=connection).fetchall()
-        symbols = MaxServerSymbolsForPeriod.get_data("period", "date", "amount", connection=connection).fetchall()
+        messages = MaxServerMessagesForPeriod.get_data(
+            "period",
+            "date",
+            "amount",
+            connection=connection,
+        ).fetchall()
+        symbols = MaxServerSymbolsForPeriod.get_data(
+            "period",
+            "date",
+            "amount",
+            connection=connection,
+        ).fetchall()
         return messages, symbols
 
     @classmethod
@@ -105,18 +125,13 @@ class ServerStats(Data):
         symbol_field = table.c["symbols"]
 
         with cls.do_with_session() as session:
-            channel_info = session.query(
-                sa.func.sum(message_field),
-                sa.func.sum(symbol_field)
-            )
-            user_with_most_messages, user_with_most_symbols = \
-                UserMaxStats.fetch_users_with_max_stats_for_period(session, table)
+            channel_info = session.query(sa.func.sum(message_field), sa.func.sum(symbol_field))
+            (
+                user_with_most_messages,
+                user_with_most_symbols,
+            ) = UserMaxStats.fetch_users_with_max_stats_for_period(session, table)
 
-        return [
-            channel_info.first(),
-            user_with_most_messages,
-            user_with_most_symbols
-        ]
+        return [channel_info.first(), user_with_most_messages, user_with_most_symbols]
 
     @staticmethod
     def set_current_stats_for_period_to_zero(period: str):

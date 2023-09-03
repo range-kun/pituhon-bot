@@ -44,6 +44,6 @@ class BirthdayDataReminder(Data):
         return bool(
             BirthdayDataReminder.get_data(
                 "user_id",
-                condition=(BirthdayDataReminder.get_table().c.user_id == user_id)
-            ).first()
+                condition=(BirthdayDataReminder.get_table().c.user_id == user_id),
+            ).first(),
         )

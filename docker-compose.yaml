@@ -28,6 +28,7 @@ services:
     environment:
       DB_HOST: data_base
       LOGGER_OUTPUT: container
+      DEBUG: "True"
     volumes:
       - /home/discord/logs:/app/logs
 
@@ -36,10 +37,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.2'
+          cpus: "0.2"
           memory: 70M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 20M
     restart: always
     build: .

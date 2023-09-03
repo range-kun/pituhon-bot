@@ -8,11 +8,10 @@ from discord.ext import commands
 
 from app.configuration import MY_GUILD
 
-
 # mute
 
-class ManageUsers(commands.Cog):
 
+class ManageUsers(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -24,9 +23,11 @@ class ManageUsers(commands.Cog):
             await ctx.send(f"{member} уже замучен")
             return
 
-        tail = f"{duration} час" + "a" * \
-               (1 < duration % 10 < 5 and duration not in range(5, 21)) + \
-               "ов" * (4 < duration % 10 < 9 or duration in range(5, 21) or duration % 10 == 0)
+        tail = (
+            f"{duration} час"
+            + "a" * (1 < duration % 10 < 5 and duration not in range(5, 21))
+            + "ов" * (4 < duration % 10 < 9 or duration in range(5, 21) or duration % 10 == 0)
+        )
 
         await member.add_roles(mute_role)
         overwrite = discord.PermissionOverwrite(send_messages=False)
@@ -50,7 +51,13 @@ class ManageUsers(commands.Cog):
 
     @commands.command(pass_contetx=True)
     @commands.has_permissions(administrator=True)
-    async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str | None = None):
+    async def kick(
+        self,
+        ctx: commands.Context,
+        member: discord.Member,
+        *,
+        reason: str | None = None,
+    ):
         await ctx.message.delete()
         await member.kick(reason=reason)
         await ctx.send(f"Выгнали {member.mention} на мороз")
@@ -74,8 +81,10 @@ class ManageUsers(commands.Cog):
         try:
             member_name, member_discriminator = member.split("#")
         except ValueError:
-            await ctx.send("Введены неверные данные пользователя, пожалуйста воспользуйтесь "
-                           "следующим форматом: username#id -> test_lexa#9087")
+            await ctx.send(
+                "Введены неверные данные пользователя, пожалуйста воспользуйтесь "
+                "следующим форматом: username#id -> test_lexa#9087",
+            )
             return
 
         if (member_name, member_discriminator) in info:
@@ -88,7 +97,10 @@ class ManageUsers(commands.Cog):
         else:
             await ctx.send(f"Пользователь {member} не найден в списке забаненных")
 
-    @commands.hybrid_command(name="ban_list", description="Показать список забаненных пользователей")
+    @commands.hybrid_command(
+        name="ban_list",
+        description="Показать список забаненных пользователей",
+    )
     @app_commands.guilds(MY_GUILD)
     async def show_ban_list(self, ctx: commands.Context):
         ban_list = [entry async for entry in ctx.guild.bans(limit=2000)]

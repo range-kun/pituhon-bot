@@ -12,4 +12,4 @@ beautifulsoup4==4.11.1
 python-decouple==3.8
 alembic==1.9.1
 loguru==0.6.0
-celery==5.3.3
+celery==5.3.1

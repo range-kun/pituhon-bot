@@ -26,7 +26,6 @@ class ChanelStats:
             await self.send_message_stats_for_day(messages_champ, symbols_champ)
         logger.info("Successfully updated channel daily stats")
 
-
     @catch_exception
     async def weekly_routine(self):
         messages_info, symbols_info = self.collect_stats_for_week()
@@ -84,14 +83,22 @@ class ChanelStats:
         ServerStats.set_current_stats_for_period_to_zero("month")
 
     @staticmethod
-    def update_max_stats(period: str, current_amount_of_messages: int, current_amount_of_symbols: int):
+    def update_max_stats(
+        period: str,
+        current_amount_of_messages: int,
+        current_amount_of_symbols: int,
+    ):
         ServerStats.compare_and_update_max_stats(
             period,
             current_amount_of_messages,
-            current_amount_of_symbols
+            current_amount_of_symbols,
         )
 
-    async def send_message_stats_for_day(self, messages_info: tuple[int, int], symbols_info: tuple[int, int]):
+    async def send_message_stats_for_day(
+        self,
+        messages_info: tuple[int, int],
+        symbols_info: tuple[int, int],
+    ):
         output = await self.create_output_message(
             channel_info=(message_day_counter.messages, message_day_counter.symbols),
             messages_info=messages_info,
@@ -100,8 +107,11 @@ class ChanelStats:
         )
         await webhook_sender.send_data(embed=output)
 
-    async def send_message_stats_for_week(self, messages_info: tuple[int, int], symbols_info: tuple[int, int]):
-
+    async def send_message_stats_for_week(
+        self,
+        messages_info: tuple[int, int],
+        symbols_info: tuple[int, int],
+    ):
         output = await self.create_output_message(
             channel_info=(self.messages_for_week, self.symbols_for_week),
             messages_info=messages_info,
@@ -110,8 +120,11 @@ class ChanelStats:
         )
         await webhook_sender.send_data(embed=output)
 
-    async def send_message_stats_for_month(self,  messages_info: tuple[int, int], symbols_info: tuple[int, int]):
-
+    async def send_message_stats_for_month(
+        self,
+        messages_info: tuple[int, int],
+        symbols_info: tuple[int, int],
+    ):
         output = await self.create_output_message(
             channel_info=(self.messages_for_month, self.symbols_for_month),
             messages_info=messages_info,
@@ -121,12 +134,12 @@ class ChanelStats:
         await webhook_sender.send_data(embed=output)
 
     async def create_output_message(
-            self,
-            *,
-            channel_info: tuple[int, int],
-            messages_info: tuple[int, int],
-            symbols_info: tuple[int, int],
-            period_info: tuple[str, str]
+        self,
+        *,
+        channel_info: tuple[int, int],
+        messages_info: tuple[int, int],
+        symbols_info: tuple[int, int],
+        period_info: tuple[str, str],
     ) -> discord.Embed:
         user_with_most_symbols, amount_of_symbols_top_user = symbols_info
         user_with_most_messages, amount_of_messages_top_user = messages_info
@@ -134,46 +147,54 @@ class ChanelStats:
         name_of_period, description_of_period = period_info
 
         champ_stats = await self.fetch_user_nickname(
-            {user_with_most_messages, user_with_most_symbols}
+            {user_with_most_messages, user_with_most_symbols},
         )
         user_name_with_most_messages = champ_stats[user_with_most_messages]
         user_name_with_most_symbols = champ_stats[user_with_most_symbols]
 
-        channel_info = f"Кол-во сообщений  =>{amount_of_all_messages}\n" \
-                       f"Кол-во символов  =>{amount_of_all_symbols}"
-        message_info = f"Чемпион по сообщениям => {user_name_with_most_messages}\n" \
-                       f"Количество=>{amount_of_messages_top_user}"
-        symbol_info = f"Чемпион по символам =>{user_name_with_most_symbols} \n" \
-                      f"Количество => {amount_of_symbols_top_user}"
+        channel_info = (
+            f"Кол-во сообщений  =>{amount_of_all_messages}\n"
+            f"Кол-во символов  =>{amount_of_all_symbols}"
+        )
+        message_info = (
+            f"Чемпион по сообщениям => {user_name_with_most_messages}\n"
+            f"Количество=>{amount_of_messages_top_user}"
+        )
+        symbol_info = (
+            f"Чемпион по символам =>{user_name_with_most_symbols} \n"
+            f"Количество => {amount_of_symbols_top_user}"
+        )
         info_dict = {
             f"Всего за {name_of_period}": "=" * 25,
             channel_info: "=" * 25,
             message_info: "=" * 25,
-            symbol_info: "=" * 25
+            symbol_info: "=" * 25,
         }
 
         emb = discord.Embed(title=description_of_period, colour=discord.Color.dark_blue())
-        for k, v in info_dict.items():
-            emb.add_field(name=k, value=v, inline=False)
+        for key, value in info_dict.items():
+            emb.add_field(name=key, value=value, inline=False)
         return emb
 
     @staticmethod
     async def fetch_user_nickname(users_id: set[int]) -> dict[int, str]:
         discord_users_url = "https://discord.com/api/users/{}"
         dict_on_names = {}
-        headers = {'Authorization': f'Bot {TOKEN}'}
+        headers = {"Authorization": f"Bot {TOKEN}"}
 
         async with aiohttp.ClientSession() as session:
             for user_id in users_id:
                 async with session.get(
-                        discord_users_url.format(user_id), headers=headers
+                    discord_users_url.format(user_id),
+                    headers=headers,
                 ) as response:
                     data = await response.json()
                     try:
                         nickname = data["username"]
                     except KeyError:
-                        nickname = 'No Info'
+                        nickname = "No Info"
                     dict_on_names[user_id] = nickname
         return dict_on_names
+
 
 channel_stats = ChanelStats()

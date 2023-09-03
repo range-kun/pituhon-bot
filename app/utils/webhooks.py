@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 
 import aiohttp
-from discord import TextChannel, Webhook, NotFound, Embed
+from discord import NotFound, TextChannel, Webhook
 from discord.ext.commands import Bot
 
 from app import TOKEN
@@ -24,8 +24,8 @@ def set_web_hook_url(url: str, token_hash: str):
 def get_token_hash(input_string, hash_algorithm="sha256") -> str:
     hash_object = hashlib.new(hash_algorithm)
 
-    input_bytes = input_string.encode('utf-8')
-    salt_bytes = SECRET_KEY.encode('utf-8')
+    input_bytes = input_string.encode("utf-8")
+    salt_bytes = SECRET_KEY.encode("utf-8")
 
     combined_bytes = input_bytes + salt_bytes
     hash_object.update(combined_bytes)
@@ -47,7 +47,6 @@ async def verify_url(url: str, channel: TextChannel, bot: Bot) -> bool:
 
 
 class WebHookSender:
-
     def __init__(self):
         self.webhook_url = self.fetch_webhook_url()
 

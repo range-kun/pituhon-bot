@@ -1,21 +1,19 @@
 from datetime import datetime, time
 
 import discord
-from discord import ButtonStyle, Embed, ui, Interaction
-from discord import app_commands, User
+from discord import ButtonStyle, Embed, Interaction, User, app_commands, ui
 from discord.ext import commands
 from sqlalchemy.engine import Row
 
 from app import NOTIFICATION_CHANNEL
 from app.configuration import MY_GUILD
 from app.log import logger
-from app.utils import  BotSetter, catch_exception
+from app.utils import BotSetter, catch_exception
 from app.utils.data.birthday_reminder import BirthdayDataReminder
 from app.utils.webhooks import webhook_sender
 
 
 class BirthdayCRUD(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -37,7 +35,7 @@ class BirthdayCRUD(commands.Cog):
             user_embed.add_field(
                 name=f"{user.name} id-> {user_id}",
                 value=birth_date.strftime("%Y-%m-%d"),
-                inline=False
+                inline=False,
             )
         return user_embed
 
@@ -59,7 +57,7 @@ class BirthdayCRUD(commands.Cog):
         else:
             await ctx.send(
                 "Пользователь с данным id отстуствует в базе именниников."
-                " Посмотреть список можно воспользовавшись командой /bl"
+                " Посмотреть список можно воспользовавшись командой /bl",
             )
 
     async def confirm_delete(self, user_id: int, ctx: commands.Context):
@@ -73,7 +71,10 @@ class BirthdayCRUD(commands.Cog):
         green_button.callback = lambda interaction: self.dont_delete_callback(interaction, user_id)
 
         red_button = ui.Button(style=ButtonStyle.red, label="Удалить")
-        red_button.callback = lambda interaction: self.delete_birthday_callback(interaction, user_id)
+        red_button.callback = lambda interaction: self.delete_birthday_callback(
+            interaction,
+            user_id,
+        )
 
         view.add_item(item=green_button)
         view.add_item(item=red_button)
@@ -82,7 +83,7 @@ class BirthdayCRUD(commands.Cog):
     @staticmethod
     async def delete_birthday_callback(interaction: Interaction, user_id: int):
         BirthdayDataReminder.delete(
-            condition=(BirthdayDataReminder.get_table().c.user_id == user_id)
+            condition=(BirthdayDataReminder.get_table().c.user_id == user_id),
         )
         await interaction.response.send_message(f"День рождение <@{user_id}> удален из базы.")
 
@@ -99,7 +100,9 @@ class BirthdayCRUD(commands.Cog):
     )
     async def add_birthday(self, ctx: commands.Context, user: User, input_birth_date: str):
         if not self.is_valid_date(input_birth_date):
-            await ctx.send(f"Указан некоректный формат даты {input_birth_date}: ГГГГ-мм-дд: 1952-10-07")
+            await ctx.send(
+                f"Указан некоректный формат даты {input_birth_date}: ГГГГ-мм-дд: 1952-10-07",
+            )
             return
 
         birthday_in_db_date = BirthdayDataReminder.get_user_birth_day(user.id)
@@ -109,35 +112,46 @@ class BirthdayCRUD(commands.Cog):
 
         BirthdayDataReminder.insert(date=input_birth_date, user_id=user.id)
         await ctx.send(
-            f"День рождение {input_birth_date} пользователя {user.name} было добавлено в базу."
+            f"День рождение {input_birth_date} пользователя {user.name} было добавлено в базу.",
         )
 
     @staticmethod
     def is_valid_date(date: str) -> bool:
         try:
-            date = datetime.strptime(date, '%Y-%m-%d')
+            date = datetime.strptime(date, "%Y-%m-%d")
         except ValueError:
             return False
         if datetime.now() < date:
             return False
         return True
 
-    async def update_birthday(self, ctx: commands.Context, user: User, date_in_db: str, new_date: str):
+    async def update_birthday(
+        self,
+        ctx: commands.Context,
+        user: User,
+        date_in_db: str,
+        new_date: str,
+    ):
         response_view = self.create_response_for_new_birthday(user.id, new_date)
         info = Embed(
             title=f"День рождение {user.name} уже добавлено в базу",
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
         info.add_field(
             name=f"Пользователь уже имеется в базе с днем рождения {date_in_db}",
-            value=f"Обновить данное значение на **{new_date}** ?")
+            value=f"Обновить данное значение на **{new_date}** ?",
+        )
         await ctx.send(embed=info, view=await response_view)
 
     async def create_response_for_new_birthday(self, user_id: int, birth_date: str) -> ui.View:
         view = ui.View()
 
         green_button = ui.Button(style=ButtonStyle.green, label="Обновить")
-        green_button.callback = lambda interaction: self.renew_button_callback(interaction, user_id, birth_date)
+        green_button.callback = lambda interaction: self.renew_button_callback(
+            interaction,
+            user_id,
+            birth_date,
+        )
 
         red_button = ui.Button(style=ButtonStyle.red, label="Не обновлять")
         red_button.callback = lambda interaction: self.dont_update_callback(interaction, user_id)
@@ -150,10 +164,10 @@ class BirthdayCRUD(commands.Cog):
     async def renew_button_callback(interaction: Interaction, user_id: int, birth_date: str):
         BirthdayDataReminder.update(
             date=birth_date,
-            condition=(BirthdayDataReminder.get_table().c.user_id == user_id)
+            condition=(BirthdayDataReminder.get_table().c.user_id == user_id),
         )
         await interaction.response.send_message(
-            f"Установлено новое значение {birth_date} дня рождения, для пользователя <@{user_id}>"
+            f"Установлено новое значение {birth_date} дня рождения, для пользователя <@{user_id}>",
         )
 
     @staticmethod
@@ -179,22 +193,16 @@ class BirthdayReminder(BotSetter):
         if NOTIFICATION_CHANNEL is None:
             return
         content = self.get_content(birthday_users)
-        await webhook_sender.send_data(
-            content=content
-        )
+        await webhook_sender.send_data(content=content)
 
     def get_content(self, birthday_users: list[int]) -> str:
         users = ", ".join(f"<@{user_id}>" for user_id in birthday_users)
         if len(birthday_users) > 1:
-            content = (
-                f"Сегодня у {users} день рождения"
-                f" 🎂, давайте мы их дружно поздравим."
-            )
+            content = f"Сегодня у {users} день рождения" f" 🎂, давайте мы их дружно поздравим."
         else:
-            content = (
-                f"Сегодня у {users} день рождение, похлопаем нашему имениннику 🥳."
-            )
+            content = f"Сегодня у {users} день рождение, похлопаем нашему имениннику 🥳."
         return content
+
 
 birthday_reminder = BirthdayReminder()
 

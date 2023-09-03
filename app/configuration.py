@@ -1,19 +1,19 @@
 import os
 
-from decouple import config
 import discord
+from decouple import config
 
 PREFIX = "?"
 MAX_HIST_RETRIEVE_RECORDS = 10
 VOTE_TIME = 60  # minutes
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
 TEST_CHANNEL_ID = config("TEST_CHANNEL_ID", default=0, cast=int)
-MAIN_CHANNEL_ID =config("MAIN_CHANEL_ID", default=0, cast=int)
+MAIN_CHANNEL_ID = config("MAIN_CHANEL_ID", default=0, cast=int)
 SERVER_ID = config("SERVER_ID", cast=int, default=0)
 MY_GUILD = discord.Object(id=SERVER_ID)
 UMBRA_ID = config("UMBRA_ID", default=0, cast=int)
 DEBUG = config("DEBUG", default=False, cast=bool)
-SECRET_KEY = config("SECRET_KEY", default='test_secret_key')
+SECRET_KEY = config("SECRET_KEY", default="test_secret_key")
 
 
 # Discord token

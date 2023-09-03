@@ -1,7 +1,7 @@
 import asyncio
 import re
 from datetime import datetime, timedelta
-from typing import Optional, NamedTuple
+from typing import NamedTuple, Optional
 
 import discord
 from discord import User, app_commands
@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.message import Message as DiscordMessage
 from discord.reaction import Reaction
 
-from app.configuration import VOTE_TIME, MY_GUILD
+from app.configuration import MY_GUILD, VOTE_TIME
 from app.utils import fetch_all_channel_users
 
 
@@ -42,7 +42,7 @@ class Poll(commands.Cog):
         "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
         "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
         "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
-        "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"
+        "\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
     ]
 
     emojis = ["👍", "👎", "🤷"]
@@ -69,7 +69,7 @@ class Poll(commands.Cog):
         embed_poll = discord.Embed(
             title="**" + title + "**",
             description=poll_message,
-            colour=0x83bae3,
+            colour=0x83BAE3,
         )
         embed_poll.set_footer(text=f"Голосование продлится {VOTE_TIME} минут")
         return embed_poll
@@ -84,22 +84,23 @@ class Poll(commands.Cog):
     @app_commands.guilds(MY_GUILD)
     @app_commands.describe(
         theme="Тема голосования",
-        text="Варианты для голосования писать в квадратных скобках: [Вариант 1] [Вариант 2] [Вариант n]"
+        text=(
+            "Варианты для голосования писать в "
+            "квадратных скобках: [Вариант 1] [Вариант 2] [Вариант n]"
+        ),
     )
     async def poll(self, ctx: commands.Context, theme: str, *, text: str):
-
         options = self.find_options(text)
         amount_of_options = len(options)
         if amount_of_options < 2:
-
             await ctx.send(
                 "Указано недостаточной опций пожалуйста используйте следующий формат:"
-                "[Вариант 1] [Вариант 2] [Вариант 3]"
+                "[Вариант 1] [Вариант 2] [Вариант 3]",
             )
             return
         if amount_of_options > len(self.emoji_letters):
             await ctx.send(
-                f"Указано слишком много опций, пожалуйсте ограничтесь {len(self.emoji_letters)}"
+                f"Указано слишком много опций, пожалуйсте ограничтесь {len(self.emoji_letters)}",
             )
             return
         embed_poll = self.create_poll_message(options, theme)
@@ -107,11 +108,7 @@ class Poll(commands.Cog):
         await self.add_reaction(poll_message, options)
         await self.add_for_tracking(poll_message, amount_of_options)
 
-    async def add_for_tracking(
-            self,
-            message: DiscordMessage,
-            amount_of_options: int
-    ):
+    async def add_for_tracking(self, message: DiscordMessage, amount_of_options: int):
         self.bot.poll_track.poll_user_stats[message.id] = {}
         self.bot.poll_track.amount_of_reactions[message.id] = amount_of_options
         await self.bot.poll_track.run_vote_loop(message.id, message.channel, message.jump_url)
@@ -123,18 +120,25 @@ class UserReactions(NamedTuple):
 
 
 class PollMessageTrack:
-
     def __init__(self):
         self.poll_user_stats: dict[DiscordMessage.id, dict[User.id, UserReactions]] = {}
         # {message_id: {user_id: UserReactions}}
-        self.amount_of_reactions: dict[DiscordMessage.id, int] = {}  # {message_id:  amount_of_reactions}
+        self.amount_of_reactions: dict[
+            DiscordMessage.id,
+            int,
+        ] = {}  # {message_id:  amount_of_reactions}
 
-    async def run_vote_loop(self, poll_message_id: int, channel: TextChannel, poll_message_url: str):
+    async def run_vote_loop(
+        self,
+        poll_message_id: int,
+        channel: TextChannel,
+        poll_message_url: str,
+    ):
         amount_of_voters = len(fetch_all_channel_users(channel)) - 1  # -1 only for my chanel :D
         time_tasks = 2  # scheduled reminders
         current_moment = datetime.now()
         finish_poll_time = current_moment + timedelta(minutes=VOTE_TIME)
-        first_time_task = current_moment + timedelta(minutes=VOTE_TIME//2)
+        first_time_task = current_moment + timedelta(minutes=VOTE_TIME // 2)
         second_time_task = finish_poll_time - timedelta(minutes=5)
 
         message = await channel.fetch_message(poll_message_id)
@@ -147,16 +151,20 @@ class PollMessageTrack:
 
             if current_moment > first_time_task and time_tasks == 2:
                 time_tasks = 1
-                description = f"До конца [голосования]({poll_message_url}) " \
-                              f"осталось {VOTE_TIME//2} минут, " \
-                              f"ваш мнение очень важно для нас."
+                description = (
+                    f"До конца [голосования]({poll_message_url}) "
+                    f"осталось {VOTE_TIME//2} минут, "
+                    f"ваш мнение очень важно для нас."
+                )
                 await self.send_poll_notification(description, channel, title=title)
 
             if current_moment > second_time_task and time_tasks == 1:
                 time_tasks = 0
-                description = f"До конца [голосования]({poll_message_url}) " \
-                              f"остлось всего 5 минут," \
-                              f" еще не поздно сделать вбросы."
+                description = (
+                    f"До конца [голосования]({poll_message_url}) "
+                    f"остлось всего 5 минут,"
+                    f" еще не поздно сделать вбросы."
+                )
                 await self.send_poll_notification(description, channel, title=title)
             await asyncio.sleep(15)
         await self.send_results(message, channel)
@@ -166,20 +174,25 @@ class PollMessageTrack:
 
         users_reaction_to_message = self.poll_user_stats.pop(message_id)
         del self.amount_of_reactions[message_id]
-        reactions = [user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()]
+        reactions = [
+            user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()
+        ]
 
         if len(reactions) == len(set(reactions)) and len(reactions) != 1:
-            description = f"[Голосование]({message.jump_url}) " \
-                          f"завершилось победитель не выявлен"
+            description = f"[Голосование]({message.jump_url}) " f"завершилось победитель не выявлен"
             await self.send_poll_notification(description, channel, title=title)
             return
 
         emoji_top_reaction = str(max(reactions, key=reactions.count))
         if reaction_names:
-            emoji_top_reaction = list(filter(lambda reaction: emoji_top_reaction in reaction, reaction_names))[0]
+            emoji_top_reaction = list(
+                filter(lambda reaction: emoji_top_reaction in reaction, reaction_names),
+            )[0]
 
-        description = f"**[Голосование]({message.jump_url}) завершилось.** " \
-                      f"Больше всего голосов набрал вариант: \n\n {emoji_top_reaction}"
+        description = (
+            f"**[Голосование]({message.jump_url}) завершилось.** "
+            f"Больше всего голосов набрал вариант: \n\n {emoji_top_reaction}"
+        )
         result_message = await self.send_poll_notification(description, channel, title=title)
         await self.mark_finished(message, result_message)
 
@@ -205,7 +218,9 @@ class PollMessageTrack:
         await old_reaction.remove(user)
         # this will trigger on_raw_reaction_remove, and it will affect poll_user_stats,
         # that"s why I need to keep two reactions
-        new_users_reaction = {user_id: UserReactions(first_reaction=new_reaction, second_reaction=old_reaction)}
+        new_users_reaction = {
+            user_id: UserReactions(first_reaction=new_reaction, second_reaction=old_reaction),
+        }
         self.poll_user_stats[message.id].update(new_users_reaction)
 
     async def process_removal_of_reaction(self, message_id: int, user_id: int):
@@ -215,9 +230,11 @@ class PollMessageTrack:
 
         user_previous_reactions = users_reaction_to_message[user_id]
         if user_previous_reactions.second_reaction is not None:
-            user_new_reactions = {user_id: UserReactions(
-                first_reaction=user_previous_reactions.first_reaction,
-                second_reaction=None)
+            user_new_reactions = {
+                user_id: UserReactions(
+                    first_reaction=user_previous_reactions.first_reaction,
+                    second_reaction=None,
+                ),
             }
             self.poll_user_stats[message_id].update(user_new_reactions)
 
@@ -229,13 +246,17 @@ class PollMessageTrack:
             reactions = message_embed.description.split("\n\n")
         else:
             message_intro = "?poll"
-            title = message.content[len(message_intro):].strip()
+            title = message.content[len(message_intro) :].strip()  # noqa E203
             reactions = None
         return title, reactions, message.id
 
     @staticmethod
-    async def send_poll_notification(string: str, channel: TextChannel, title=None) -> DiscordMessage:
-        embed = discord.Embed(colour=0x83bae3)
+    async def send_poll_notification(
+        string: str,
+        channel: TextChannel,
+        title=None,
+    ) -> DiscordMessage:
+        embed = discord.Embed(colour=0x83BAE3)
         if title:
             embed.title = title
         embed.description = string
@@ -255,8 +276,7 @@ class PollMessageTrack:
             message_embed = poll_message.embeds[0]
             description = message_embed.description
             description += f"\n\nГолсование окончено. Результаты [тут]({result_message.jump_url})."
-            new_embed = Embed(title=message_embed.title,
-                              description=description)
+            new_embed = Embed(title=message_embed.title, description=description)
             await poll_message.edit(embed=new_embed)
 
 

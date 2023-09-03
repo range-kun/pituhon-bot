@@ -1,5 +1,4 @@
-from app import configuration
-from app import log
+from app import configuration, log
 
 
 def get_notification_channel(bot_mode: str | None = None) -> int | None:
@@ -13,6 +12,7 @@ def get_notification_channel(bot_mode: str | None = None) -> int | None:
     else:
         log.logger.info("Notification channel not selected")
     return channel_id
+
 
 TOKEN = configuration.TOKEN
 

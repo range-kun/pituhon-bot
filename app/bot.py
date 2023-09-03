@@ -9,7 +9,7 @@ import aiohttp
 import discord
 import yaml
 from bs4 import BeautifulSoup
-from discord import app_commands, errors, Forbidden
+from discord import Forbidden, app_commands, errors
 from discord.ext import commands
 from discord.ext.commands import CommandError
 from loguru import logger
@@ -18,13 +18,23 @@ from app import NOTIFICATION_CHANNEL, TOKEN
 from app.cogs.birthday_reminder import birthday_reminder
 from app.cogs.poll import PollMessageTrack
 from app.configuration import (
-    UMBRA_ID, MAIN_CHANNEL_ID, MY_GUILD, MAX_HIST_RETRIEVE_RECORDS, PREFIX)
-from app.utils import today, send_yaml_text
+    MAIN_CHANNEL_ID,
+    MAX_HIST_RETRIEVE_RECORDS,
+    MY_GUILD,
+    PREFIX,
+    UMBRA_ID,
+)
+from app.utils import send_yaml_text, today
 from app.utils.data.history_record import HistoryRecord
 from app.utils.data.phrase import PhraseData
 from app.utils.message_stats_routine import message_day_counter
+from app.utils.webhooks import (
+    fetch_web_hook_url,
+    get_token_hash,
+    set_web_hook_url,
+    verify_url,
+)
 from app.utils.youtube_limiter import youtube_links_counter
-from app.utils.webhooks import get_token_hash, fetch_web_hook_url, verify_url, set_web_hook_url
 
 HELLO_WORDS = ["ky", "ку"]
 ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
@@ -32,7 +42,6 @@ GOODBYE_WORDS = ["бб", "bb", "лан я пошел", "я спать"]
 
 
 class Bot(commands.Bot):
-
     def __init__(self):
         intents = discord.Intents().all()
         super().__init__(command_prefix=PREFIX, intents=intents)
@@ -75,17 +84,20 @@ class Bot(commands.Bot):
         except errors.NotFound:
             pass
 
-        if isinstance(exception, discord.ext.commands.errors.CommandOnCooldown) or \
-                isinstance(exception, discord.app_commands.errors.CommandOnCooldown):
+        if isinstance(exception, discord.ext.commands.errors.CommandOnCooldown) or isinstance(
+            exception,
+            discord.app_commands.errors.CommandOnCooldown,
+        ):
             await ctx.send(
                 f"{ctx.message.author.name} погоди мой сладкий я почилю еще %.2f cек и тогда сделаю"
-                f" все что смогу для тебя" % exception.retry_after
+                f" все что смогу для тебя" % exception.retry_after,
             )
         elif isinstance(exception, discord.ext.commands.errors.CommandNotFound):
             await ctx.send(f"Команда {ctx.message.content} не была обноружена")
         elif isinstance(exception, discord.ext.commands.errors.MissingRequiredArgument):
             await ctx.send(
-                f"Команде {ctx.message.content} не хватает аргументов, наберите ?cmds для подсказки"
+                f"Команде {ctx.message.content} не хватает "
+                f"аргументов, наберите ?cmds для подсказки",
             )
         else:
             logger.opt(exception=exception).error(f"Unexpected error {str(exception)} occurred.")
@@ -101,7 +113,9 @@ class Bot(commands.Bot):
 
         await self.process_commands(message)
 
-        if self.parse_youtube_link(message.content) and not youtube_links_counter.is_in_limit(message.author):
+        if self.parse_youtube_link(message.content) and not youtube_links_counter.is_in_limit(
+            message.author,
+        ):
             await message.delete()
             await self.send_youtube_extend_links_message(message)
             return
@@ -117,7 +131,11 @@ class Bot(commands.Bot):
             await message.channel.send(f"{message.author.name} слышь чорт, сам ты {range_lox_word}")
             return
 
-        if any(i.isalpha() for i in msg_text) and message.content.upper() == message.content and self.caps:
+        if (
+            any(i.isalpha() for i in msg_text)
+            and message.content.upper() == message.content
+            and self.caps
+        ):
             await message.delete()
             await message.channel.send(f"{message.author.name}: {message.content.capitalize()}")
         if msg_text in HELLO_WORDS:
@@ -131,7 +149,9 @@ class Bot(commands.Bot):
     def parse_range_lox_word(msg_text: str) -> str | None:
         range_lox_regex = re.search(
             r"[\w\s]*[rр]+\s*[aа]+\s*[nн]+[\s*гrg]+\s*[aаeе]+[\s\w]*([лl]+\s*[0oо]+\s*(?:[hxхз]+|"
-            r"(?:}{)+)|(?:]\[)+)[\w\s]*", msg_text)
+            r"(?:}{)+)|(?:]\[)+)[\w\s]*",
+            msg_text,
+        )
         if range_lox_regex:
             return range_lox_regex[1]
 
@@ -147,7 +167,7 @@ class Bot(commands.Bot):
         youtube_check = re.match(
             r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch"
             r"\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$",
-            msg_contnet
+            msg_contnet,
         )
         return bool(youtube_check)
 
@@ -162,7 +182,7 @@ class Bot(commands.Bot):
             f"Выполняю обработку команды {msg_text}, а нет не выполняю, иди нахуй, черт",
             "У меня перерыв 15 минут прошу простить",
             "Докажите что вы человек чтобы воспользоваться ботом",
-            msg_text * 3
+            msg_text * 3,
         ]
 
         if self.nahooj and message.author.id == UMBRA_ID and message.channel.id == MAIN_CHANNEL_ID:
@@ -176,9 +196,10 @@ class Bot(commands.Bot):
 
         await message.channel.send(
             f"Воу воу вы превышаете количество линков на YouTube в час гражданин. "
-            f"Соблюидайте скоростной лимит, пожалуйста, в {youtube_links_counter.max_youtube_limit} линк/час. "
+            f"Соблюидайте скоростной лимит, пожалуйста, "
+            f"в {youtube_links_counter.max_youtube_limit} линк/час. "
             f"Счетчик обнулится примерно через {youtube_links_counter.get_time_to_reset()} минут.",
-            file=police_file
+            file=police_file,
         )
 
 
@@ -190,8 +211,8 @@ bot.remove_command("help")
 @bot.tree.command(name="dob", description="Добавить фразу в список", guild=MY_GUILD)
 @app_commands.describe(
     author="Автор цитаты, опционально, если не указать будет использован автор сообщения.",
-    text=f"Текст цитаты"
-    )
+    text="Текст цитаты",
+)
 @app_commands.guilds(MY_GUILD)
 async def dob(interaction: discord.Interaction, author: str | None = None, *, text: str):
     author = author or interaction.user.name
@@ -206,18 +227,23 @@ async def cit(ctx: commands.Context):
     data = PhraseData.get_random_phrase()
     if data is None:
         return await ctx.send(
-            f"Случайная фраза не была получена, воспользуйтесь сначала командой dob что бы добавить в базу"
+            "Случайная фраза не была получена, воспользуйтесь"
+            " сначала командой dob что бы добавить в базу",
         )
     author, text = data
     await ctx.send(f"{author}: {text}")
 
 
 # add history log
-@bot.tree.command(name="hist", description="Добавить запись с текстом text в историю", guild=MY_GUILD)
+@bot.tree.command(
+    name="hist",
+    description="Добавить запись с текстом text в историю",
+    guild=MY_GUILD,
+)
 async def hist(interaction: discord.Interaction, *, text: str):
     HistoryRecord.insert(date=today(), log=text.capitalize())
     await interaction.response.send_message(
-        f"{today().strftime('%d-%m-%Y')} - было добавлено воспоминание: {text}"
+        f"{today().strftime('%d-%m-%Y')} - было добавлено воспоминание: {text}",
     )
 
 
@@ -226,16 +252,16 @@ async def hist(interaction: discord.Interaction, *, text: str):
 @app_commands.describe(
     date="Дата когда искать. Формат дат: 30-05-2000; 05-2000; 2000",
     num=f"Номер записи с которой показать {MAX_HIST_RETRIEVE_RECORDS} записей. "
-        f"Если 2 то со 2 по {MAX_HIST_RETRIEVE_RECORDS + 2}"
-    )
+    f"Если 2 то со 2 по {MAX_HIST_RETRIEVE_RECORDS + 2}",
+)
 async def rec(ctx: commands.Context, date: str | None = None, num: int | None = None):
     result = HistoryRecord.get_record(date, offset=num)
 
-    if type(result) == str:
+    if type(result) is str:
         return await ctx.send(result)
     if not result:
         return await ctx.send(
-            "Пожалуйста сначала добавьте воспоминания воспользовавшись командой hist"
+            "Пожалуйста сначала добавьте воспоминания воспользовавшись командой hist",
         )
     output = ""
     for date, record in result:
@@ -248,7 +274,7 @@ async def rec(ctx: commands.Context, date: str | None = None, num: int | None = 
 @bot.command(pass_contetx=True)
 @commands.has_permissions(administrator=True)
 async def clear(ctx: commands.Context, amount: int = 10):
-    await ctx.channel.purge(limit=amount+1)
+    await ctx.channel.purge(limit=amount + 1)
 
 
 @bot.hybrid_command(name="cmds", description="Список доступных команд")
@@ -263,7 +289,9 @@ async def cmds(ctx: commands.Context):
             commands_description = yaml.safe_load(file)["commands_description"]
     except FileNotFoundError:
         logger.opt(exception=True).error("Commands description with not found")
-        await ctx.send(r"При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯")
+        await ctx.send(
+            r"При попытки вызвать команду cmds произошла ошибка на стороне сервера, ¯\_(ツ)_/¯",
+        )
         return
     for command_name, description in commands_description.items():
         prefix = PREFIX
@@ -280,7 +308,8 @@ async def cmds(ctx: commands.Context):
     languages_info = discord.Embed(
         title="Список языков и их сокращения",
         url="https://gist.githubusercontent.com/astronautlevel2/93a19379bd52b351dbc6eef269efa0bc/"
-            "raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json")
+        "raw/18d55123bc85e2ef8f54e09007489ceff9b3ba51/langs.json",
+    )
     await ctx.send(embed=languages_info)
 
 
@@ -309,7 +338,7 @@ async def f(ctx: commands.Context):
 async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
     if limit == 0:
         youtube_links_counter.set_youtube_link_limit(None)
-        await ctx.send(f"Убран лимит на ссылки с youtube")
+        await ctx.send("Убран лимит на ссылки с youtube")
         return
 
     youtube_links_counter.set_youtube_link_limit(limit)
@@ -326,7 +355,7 @@ async def setup_web_hook():
         return
 
     try:
-        webhook = await channel.create_webhook(name='Statistic')
+        webhook = await channel.create_webhook(name="Statistic")
     except Forbidden:
         logger.warning("Web Hook not created please provide this permission for the bot")
     else:

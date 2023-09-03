@@ -1,14 +1,11 @@
 from logging.config import fileConfig
 
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
-
 from app import configuration as conf_data
 from app.log import logger
-
 from app.utils.data import Data
 
 for klass in Data.__subclasses__():
@@ -33,7 +30,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.utils.data import metadata
+from app.utils.data import metadata  # noqa E402
+
 target_metadata = metadata
 
 
@@ -80,7 +78,7 @@ def run_migrations_online() -> None:
             script = directives[0]
             if script.upgrade_ops.is_empty():
                 directives[:] = []
-                logger.info('No changes in schema detected.')
+                logger.info("No changes in schema detected.")
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
@@ -92,7 +90,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            process_revision_directives=process_revision_directives
+            process_revision_directives=process_revision_directives,
         )
 
         with context.begin_transaction():

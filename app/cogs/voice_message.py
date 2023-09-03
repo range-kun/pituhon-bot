@@ -6,12 +6,11 @@ import gtts
 from discord import app_commands, errors
 from discord.ext import commands
 
-from app.configuration import MY_GUILD
 from app.cogs.translate import Translate
+from app.configuration import MY_GUILD
 
 
 class VoiceMessage(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -30,7 +29,7 @@ class VoiceMessage(commands.Cog):
         audio_file.save(file_name)
         await ctx.send(
             f"Аудио сообщение от {ctx.message.author.name}",
-            file=discord.File(file_name)
+            file=discord.File(file_name),
         )
         os.remove(file_name)
 
