@@ -6,9 +6,10 @@
 - All configurations can be done with using config.py file and .env file
 - Log data would be stored in /home/discord/logs
 - Database would be created on your machine
+- Redis container would be created automatically
 - Test mode to send all notification information to test channel with test bot
-  - To run bot in the test mode you will need additional test token, test bot. At docker-compose.yaml you'll need to add at the end of line
-«command:  bash -c "alembic upgrade head && python -m app"» word «test» or run «python -m app test» without docker
+  - To run bot in the test mode you will need additional test token, test bot.
+  - Docker-compose.override.yml by default support test mode (to change it update DEBUG var)
 
 
 ### To begin with bot next steps required:
@@ -17,11 +18,10 @@
     - You need to get discord bot token
     - Create discord application with support of application.commands,  administrator privileges (optional)
    and Privileged Gateway Intents enabled
-    - Redis database credentials
     - Google search token (more info here https://developers.google.com/webmaster-tools/search-console-api/v1/configure
    or here https://www.youtube.com/watch?v=-uy4L4P1Ujs)
     - ID's for your server channel, main channel for bot notifications and test channel (last two is optional)
-3. Run: docker-compose build and docker-compose up, this would create database on your machine and apply migrations and start your bot
+3. Run: docker-compose up -d --build, this would create redis & database on your machine and apply migrations and start your bot
 
 ### Available  features:
 1. Support of slash commands with description
