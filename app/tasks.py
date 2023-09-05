@@ -6,12 +6,12 @@ from celery.schedules import crontab
 from celery.utils.log import get_task_logger
 
 from app.cogs.birthday_reminder import birthday_reminder
-from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from app.configuration import REDIS_HOST, REDIS_PORT
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
 from app.utils.message_stats_routine.user_stats_routine import user_stats
 
-redis_url = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
+redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 
 app = Celery("tasks", broker=redis_url)
 app.conf.timezone = "Europe/Moscow"

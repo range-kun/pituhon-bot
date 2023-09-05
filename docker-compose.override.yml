@@ -1,0 +1,20 @@
+services:
+  app:
+    volumes:
+      - type: bind
+        source: ./
+        target: /app
+    environment:
+      DEBUG: "true"
+      DB_HOST: discord_db_container
+
+  data_base:
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+
+  redis:
+    ports:
+    - "${REDIS_PORT}:6379"

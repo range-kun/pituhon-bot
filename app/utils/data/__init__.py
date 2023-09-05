@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.engine.cursor import LegacyCursorResult
 from sqlalchemy.orm import sessionmaker
 
-from app.configuration import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
+from app.configuration import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
 metadata = sa.MetaData()
 
@@ -30,7 +30,7 @@ class Data:
     @classmethod
     def connect_to_db(cls):
         cls.db = sa.create_engine(
-            url=f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}",
+            url=f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
         )
 
     @classmethod

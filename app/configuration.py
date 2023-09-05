@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import discord
@@ -24,22 +26,25 @@ TEST_TOKEN = config("BOT_TEST_TOKEN", default=None)
 API_KEY = config("API_KEY")
 SEARCH_ENGINE_ID = config("SEARCH_ENGINE_ID")
 
-# DB
-DB_USER = config("DB_USER")
-DB_PASSWORD = config("DB_PASSWORD")
-DB_NAME = config("DB_LOCAL_NAME")
 
-if os.name == "nt":
-    default_host = "localhost"
-else:
-    default_host = "0.0.0.0"
-DB_HOST = config("DB_HOST", default=default_host)
+# DB
+def get_default_db_host() -> str:
+    if os.name == "nt":
+        return "localhost"
+    else:
+        return "0.0.0.0"
+
+
+DB_USER = config("DB_USER", "postgres")
+DB_PASSWORD = config("DB_PASSWORD", "postgres")
+DB_NAME = config("DB_NAME", "postgres")
+DB_HOST = config("DB_HOST", default=get_default_db_host())
+DB_PORT = config("DB_PORT", cast=int, default=5432)
 
 
 # Redis
-REDIS_PASSWORD = config("REDIS_PASSWORD")
-REDIS_HOST = config("REDIS_HOST")
-REDIS_PORT = config("REDIS_PORT")
+REDIS_HOST = config("REDIS_HOST", default="redis")
+REDIS_PORT = config("REDIS_PORT", default="6379")
 
 
 LOGGER_OUTPUT = config("LOGGER_OUTPUT", default="std_err")

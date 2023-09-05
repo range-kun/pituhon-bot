@@ -4,6 +4,14 @@
 /venv
 /.gitignore
 .git
-.idea
 .dockerignore
-/backup
+/backupvenv
+.gitignore
+docker*.yml
+.gitlab-ci.yml
+.pre-commit-config.yaml
+
+
+# IDE
+.vscode
+.idea

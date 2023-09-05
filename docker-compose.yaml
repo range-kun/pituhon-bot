@@ -1,37 +1,34 @@
 version: "3.9"
 services:
-  data_base:
-    image: postgres:14.2
-    container_name: discord_db_container
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_LOCAL_NAME}
-      POSTGRES_USER: ${DB_USER}
-    volumes:
-      - discord_db_volume:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_LOCAL_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   app:
+    restart: always
     build:
       context: .
     depends_on:
       data_base:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     command:  bash -c "alembic upgrade head && python -m app"
     environment:
-      DB_HOST: data_base
       LOGGER_OUTPUT: container
-      DEBUG: "True"
     volumes:
       - /home/discord/logs:/app/logs
 
+  data_base:
+    restart: always
+    image: postgres:14.2
+    container_name: discord_db_container
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - discord_db_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   worker:
     deploy:
@@ -46,14 +43,33 @@ services:
     build: .
     command: celery -A app.tasks worker --loglevel=info
     depends_on:
-    - app
+      redis:
+          condition: service_healthy
+      app:
+          condition: service_started
 
   beat:
     restart: always
     build: .
     command: celery -A app.tasks beat --loglevel=info
     depends_on:
-      - app
+      redis:
+          condition: service_healthy
+      app:
+          condition: service_started
+      worker:
+        condition: service_started
+
+  redis:
+    restart: always
+    image: redis:7.0.5-alpine
+    expose:
+      - 6379
+    healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 1s
+        timeout: 3s
+        retries: 30
 
 volumes:
   discord_db_volume:

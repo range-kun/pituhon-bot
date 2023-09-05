@@ -8,9 +8,10 @@ import re
 import redis
 from discord import Message
 from discord.ext import tasks
+from redis import ResponseError
 from redis.commands.json.path import Path
 
-from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from app.configuration import REDIS_HOST, REDIS_PORT
 from app.log import logger
 from app.utils import catch_exception, redis_connection_manager
 
@@ -51,14 +52,14 @@ class MessageDayCounter:
 
     @staticmethod
     def get_redis_connection():
-        connection = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
+        connection = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
         try:
             connection.ping()
         except redis.exceptions.TimeoutError:
             logger.warning("Not possible to create connection with remote redis server")
         return connection
 
-    @tasks.loop(minutes=20)
+    @tasks.loop(minutes=5)
     @catch_exception
     async def counter_routine(self):
         if not self._messages:
@@ -103,7 +104,7 @@ class MessageDayCounter:
         try:
             with redis_connection_manager() as redis_connection:
                 redis_authors = json.loads(redis_connection.json().get("authors"))
-        except TypeError:
+        except (TypeError, ResponseError):
             redis_authors = {}
 
         redis_authors = {
