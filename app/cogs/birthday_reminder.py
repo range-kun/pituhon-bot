@@ -17,7 +17,7 @@ class BirthdayCRUD(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="bl", description="Показать список именниников :)")
+    @commands.hybrid_command(name="bl", description="Показать список именинников :)")
     @app_commands.guilds(MY_GUILD)
     async def birthday_list(self, ctx: commands.Context):
         birthday_users = BirthdayDataReminder.get_all_birthday_users()
@@ -39,11 +39,11 @@ class BirthdayCRUD(commands.Cog):
             )
         return user_embed
 
-    @commands.hybrid_command(name="bd", description="Удалить пользователя из базы именниников")
+    @commands.hybrid_command(name="bd", description="Удалить пользователя из базы именинников")
     @commands.has_permissions(administrator=True)
     @app_commands.guilds(MY_GUILD)
     @app_commands.describe(
-        user_id="Id нужного пользователя (ПКМ -> упомняуть)",
+        user_id="Id нужного пользователя (ПКМ -> упомянуть)",
     )
     async def delete_birthday(self, ctx: commands.Context, user_id: str):
         try:
@@ -56,13 +56,13 @@ class BirthdayCRUD(commands.Cog):
             await self.confirm_delete(user_id, ctx)
         else:
             await ctx.send(
-                "Пользователь с данным id отстуствует в базе именниников."
+                "Пользователь с данным id отсутствует в базе именинников."
                 " Посмотреть список можно воспользовавшись командой /bl",
             )
 
     async def confirm_delete(self, user_id: int, ctx: commands.Context):
         response_view = self.create_response_for_delete_birthday(user_id)
-        await ctx.send("Удалить пользователя из базы именниников?", view=await response_view)
+        await ctx.send("Удалить пользователя из базы именинников?", view=await response_view)
 
     async def create_response_for_delete_birthday(self, user_id: int) -> ui.View:
         view = ui.View()
@@ -91,17 +91,17 @@ class BirthdayCRUD(commands.Cog):
     async def dont_delete_callback(interaction: Interaction, user_id: int):
         await interaction.response.send_message(f"День рождение <@{user_id}> остался в базе.")
 
-    @commands.hybrid_command(name="ba", description="Добавить нового иммениника в базу")
+    @commands.hybrid_command(name="ba", description="Добавить нового именинника в базу")
     @commands.has_permissions(administrator=True)
     @app_commands.guilds(MY_GUILD)
     @app_commands.describe(
-        user="Нужный пользователь (ПКМ -> упомняуть)",
+        user="Нужный пользователь (ПКМ -> упомянуть)",
         input_birth_date="День рождения в формате ГГГГ-мм-дд: 1952-10-07",
     )
     async def add_birthday(self, ctx: commands.Context, user: User, input_birth_date: str):
         if not self.is_valid_date(input_birth_date):
             await ctx.send(
-                f"Указан некоректный формат даты {input_birth_date}: ГГГГ-мм-дд: 1952-10-07",
+                f"Указан некорректный формат даты {input_birth_date}: ГГГГ-мм-дд: 1952-10-07",
             )
             return
 

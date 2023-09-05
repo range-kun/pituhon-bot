@@ -93,7 +93,7 @@ class Bot(commands.Bot):
                 f" все что смогу для тебя" % exception.retry_after,
             )
         elif isinstance(exception, discord.ext.commands.errors.CommandNotFound):
-            await ctx.send(f"Команда {ctx.message.content} не была обноружена")
+            await ctx.send(f"Команда {ctx.message.content} не была обнаружена")
         elif isinstance(exception, discord.ext.commands.errors.MissingRequiredArgument):
             await ctx.send(
                 f"Команде {ctx.message.content} не хватает "
@@ -128,7 +128,7 @@ class Bot(commands.Bot):
         range_lox_word = self.parse_range_lox_word(msg_text)
         if range_lox_word:
             await message.delete()
-            await message.channel.send(f"{message.author.name} слышь чорт, сам ты {range_lox_word}")
+            await message.channel.send(f"{message.author.name} слышь ч0рт, сам ты {range_lox_word}")
             return
 
         if (
@@ -144,6 +144,8 @@ class Bot(commands.Bot):
             await message.channel.send(f"напиши {PREFIX}cmds и тебе откроются все тайны")
         elif msg_text in GOODBYE_WORDS:
             await message.channel.send(f"{message.author.name} пиздуй бороздуй и я попиздил")
+        elif "ливну" in msg_text:
+            await message.channel.send(f"{message.author.name} давай уебывай уже отсюда")
 
     @staticmethod
     def parse_range_lox_word(msg_text: str) -> str | None:
@@ -196,7 +198,7 @@ class Bot(commands.Bot):
 
         await message.channel.send(
             f"Воу воу вы превышаете количество линков на YouTube в час гражданин. "
-            f"Соблюидайте скоростной лимит, пожалуйста, "
+            f"Соблюдайте скоростной лимит, пожалуйста, "
             f"в {youtube_links_counter.max_youtube_limit} линк/час. "
             f"Счетчик обнулится примерно через {youtube_links_counter.get_time_to_reset()} минут.",
             file=police_file,

@@ -7,7 +7,7 @@ from decouple import config
 
 PREFIX = "?"
 MAX_HIST_RETRIEVE_RECORDS = 10
-VOTE_TIME = 60  # minutes
+VOTE_TIME = 20  # minutes
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
 TEST_CHANNEL_ID = config("TEST_CHANNEL_ID", default=0, cast=int)
 MAIN_CHANNEL_ID = config("MAIN_CHANEL_ID", default=0, cast=int)
@@ -49,4 +49,4 @@ REDIS_PORT = config("REDIS_PORT", default="6379")
 
 LOGGER_OUTPUT = config("LOGGER_OUTPUT", default="std_err")
 # std_err if suppose to be written to console
-# container if it suppose to work in docker_compose
+# container if it supposes to work in docker_compose

@@ -43,8 +43,8 @@ class MessageStats(commands.Cog):
             await self.proceed_champ_stats(ctx, ctx.author)
         else:
             await ctx.send(
-                f"Бот не может обработать стастистику {text}, "
-                f"воспользуйтест ?cmd для просмотра опций",
+                f"Бот не может обработать статистику {text}, "
+                f"воспользуйтесь ?cmd для просмотра опций",
             )
 
     async def proceed_users_data(self, ctx: commands.Context, author: discord.User):
@@ -57,7 +57,7 @@ class MessageStats(commands.Cog):
         max_structure = MessageStructure.create_user_max_structure(user_max_info)
 
         if not max_structure and not current_structure:
-            await ctx.send(f"Статитсика по запросу {author.name} в базе не найдена")
+            await ctx.send(f"Статистика по запросу {author.name} в базе не найдена")
 
         if current_structure:
             current_structure = str(f"```yaml\n{current_structure}```")
