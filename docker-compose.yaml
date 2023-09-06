@@ -64,7 +64,7 @@ services:
 
   redis:
     restart: always
-    image: redis:7.0.5-alpine
+    image: redis/redis-stack-server
     expose:
       - 6379
     healthcheck:

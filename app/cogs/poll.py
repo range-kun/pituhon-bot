@@ -16,13 +16,6 @@ from app.configuration import MY_GUILD, VOTE_TIME
 from app.utils import fetch_all_channel_users
 
 
-@dataclass
-class PollExecutionTime:
-    finish_time: datetime
-    first_remind_time: datetime
-    last_remind_time: datetime
-
-
 class Poll(commands.Cog):
     emoji_letters = [
         "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
@@ -116,8 +109,10 @@ class Poll(commands.Cog):
         await self.add_for_tracking(poll_message, amount_of_options)
 
     async def add_for_tracking(self, message: DiscordMessage, amount_of_options: int):
-        self.bot.poll_track.poll_user_stats[message.id] = {}
-        self.bot.poll_track.amount_of_reactions[message.id] = amount_of_options
+        self.bot.poll_track.poll_message_data[message.id] = MessagePollData(
+            {},
+            amount_of_reactions=amount_of_options,
+        )
         await self.bot.poll_track.run_vote_loop(message.id, message.channel, message.jump_url)
 
 
@@ -126,21 +121,26 @@ class UserReactions(NamedTuple):
     second_reaction: Optional[Reaction] = None
 
 
+@dataclass
+class PollExecutionTime:
+    finish_time: datetime
+    first_remind_time: datetime
+    last_remind_time: datetime
+
+
+@dataclass
+class MessagePollData:
+    user_reactions: dict[User.id, UserReactions]
+    amount_of_reactions: int = 0
+    tasks_counter: int = 2
+
+
 class PollMessageTrack:
     second_reminder_time = 5  # minutes
 
     def __init__(self):
-        # {message_id: {user_id: UserReactions}}
-        self.poll_user_stats: dict[DiscordMessage.id, dict[User.id, UserReactions]] = {}
-
-        # {message_id:  amount_of_reactions}
-        self.amount_of_reactions: dict[
-            DiscordMessage.id,
-            int,
-        ] = {}
-
-        # {message_id: amount_of_reminds}
-        self.tasks_counter: dict[DiscordMessage.id, int] = {}
+        # {message_id: {user_id: MessagePollData}}
+        self.poll_message_data: dict[DiscordMessage.id, MessagePollData] = {}
 
     async def run_vote_loop(
         self,
@@ -149,7 +149,6 @@ class PollMessageTrack:
         poll_message_url: str,
     ):
         amount_of_voters = len(fetch_all_channel_users(channel)) - 1  # -1 only for my chanel :D
-        self.tasks_counter[poll_message_id] = 2
 
         poll_execution_time = self.get_tasks_time()
 
@@ -157,7 +156,7 @@ class PollMessageTrack:
         title, _, _ = self.fetch_message_info(message)
 
         while (current_moment := datetime.now()) < poll_execution_time.finish_time:
-            users_already_voted = len(self.poll_user_stats[poll_message_id].keys())
+            users_already_voted = len(self.poll_message_data[poll_message_id].user_reactions.keys())
             if users_already_voted >= amount_of_voters:
                 break
             await self.process_poll_notification(
@@ -168,14 +167,14 @@ class PollMessageTrack:
                 title,
                 poll_message_id,
             )
-            await asyncio.sleep(15)
+            await asyncio.sleep(1)
         await self.send_results(message, channel)
 
     async def send_results(self, message: DiscordMessage, channel: TextChannel):
         title, reaction_names, message_id = self.fetch_message_info(message)
 
-        users_reaction_to_message = self.poll_user_stats.pop(message_id)
-        del self.amount_of_reactions[message_id]
+        poll_data = self.poll_message_data.pop(message_id)
+        users_reaction_to_message = poll_data.user_reactions
         reactions = [
             user_reaction.first_reaction for _, user_reaction in users_reaction_to_message.items()
         ]
@@ -199,12 +198,12 @@ class PollMessageTrack:
         await self.mark_finished(message, result_message)
 
     async def save_or_update_reactions(self, new_reaction: Reaction, user: User):
-        if new_reaction.message.id not in self.poll_user_stats:
+        if new_reaction.message.id not in self.poll_message_data:
             return
 
         message = new_reaction.message
         user_id = user.id
-        users_reaction_to_message = self.poll_user_stats[message.id]
+        users_reaction_to_message = self.poll_message_data[message.id].user_reactions
         allowed_reactions = self.parse_allowed_reactions(message)
 
         if str(new_reaction) not in allowed_reactions:
@@ -213,7 +212,7 @@ class PollMessageTrack:
 
         if user_id not in users_reaction_to_message:
             user_reaction = UserReactions(first_reaction=new_reaction)
-            self.poll_user_stats[message.id].update({user_id: user_reaction})
+            users_reaction_to_message.update({user_id: user_reaction})
             return
 
         old_reaction = users_reaction_to_message[user_id].first_reaction
@@ -223,10 +222,10 @@ class PollMessageTrack:
         new_users_reaction = {
             user_id: UserReactions(first_reaction=new_reaction, second_reaction=old_reaction),
         }
-        self.poll_user_stats[message.id].update(new_users_reaction)
+        users_reaction_to_message.update(new_users_reaction)
 
     async def process_removal_of_reaction(self, message_id: int, user_id: int):
-        users_reaction_to_message = self.poll_user_stats[message_id]
+        users_reaction_to_message = self.poll_message_data[message_id].user_reactions
         if user_id not in users_reaction_to_message:
             return
 
@@ -238,7 +237,7 @@ class PollMessageTrack:
                     second_reaction=None,
                 ),
             }
-            self.poll_user_stats[message_id].update(user_new_reactions)
+            users_reaction_to_message.update(user_new_reactions)
 
     @staticmethod
     def fetch_message_info(message: DiscordMessage) -> tuple[str, str, int]:
@@ -269,11 +268,10 @@ class PollMessageTrack:
         title: str,
         message_id: int,
     ):
-        if (
-            current_moment > poll_execution_time.first_remind_time
-            and self.tasks_counter[message_id] == 2
-        ):
-            self.tasks_counter[message_id] = 1
+        task_counter = self.poll_message_data[message_id].tasks_counter
+
+        if current_moment > poll_execution_time.first_remind_time and task_counter == 2:
+            self.poll_message_data[message_id].tasks_counter = 1
             description = (
                 f"До конца [голосования]({poll_message_url}) "
                 f"осталось {VOTE_TIME // 2} минут, "
@@ -281,11 +279,8 @@ class PollMessageTrack:
             )
             await self.send_poll_notification(description, channel, title=title)
 
-        if (
-            current_moment > poll_execution_time.last_remind_time
-            and self.tasks_counter[message_id] == 1
-        ):
-            self.tasks_counter[message_id] = 0
+        if current_moment > poll_execution_time.last_remind_time and task_counter == 1:
+            self.poll_message_data[message_id].tasks_counter = 0
             description = (
                 f"До конца [голосования]({poll_message_url}) "
                 f"осталось всего {self.second_reminder_time} минут,"
@@ -307,7 +302,7 @@ class PollMessageTrack:
         return result_message
 
     def parse_allowed_reactions(self, message: DiscordMessage) -> list:
-        amount_of_reactions = self.amount_of_reactions[message.id]
+        amount_of_reactions = self.poll_message_data[message.id].amount_of_reactions
         allowed_reactions = Poll.emoji_letters[:amount_of_reactions]
         return allowed_reactions
 

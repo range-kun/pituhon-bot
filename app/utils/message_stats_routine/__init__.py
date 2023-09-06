@@ -8,7 +8,6 @@ import re
 import redis
 from discord import Message
 from discord.ext import tasks
-from redis import ResponseError
 from redis.commands.json.path import Path
 
 from app.configuration import REDIS_HOST, REDIS_PORT
@@ -104,7 +103,7 @@ class MessageDayCounter:
         try:
             with redis_connection_manager() as redis_connection:
                 redis_authors = json.loads(redis_connection.json().get("authors"))
-        except (TypeError, ResponseError):
+        except TypeError:
             redis_authors = {}
 
         redis_authors = {

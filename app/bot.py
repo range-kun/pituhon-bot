@@ -74,7 +74,7 @@ class Bot(commands.Bot):
         await self.poll_track.save_or_update_reactions(reaction, user)
 
     async def on_raw_reaction_remove(self, payload):
-        if payload.message_id not in self.poll_track.poll_user_stats:
+        if payload.message_id not in self.poll_track.poll_message_data:
             return
         await self.poll_track.process_removal_of_reaction(payload.message_id, payload.user_id)
 
