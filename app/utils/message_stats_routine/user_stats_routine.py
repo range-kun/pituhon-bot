@@ -46,6 +46,7 @@ class UserStats:
     def update_user_max_stats_for_period(self, period: str):
         users_new_data = self.get_current_users_stats(period)
         if not users_new_data:
+            logger.info(f"No new data for period {period}")
             return
 
         messages_info, symbols_info = UserMaxStats.get_all_users_max_stats(period)

@@ -19,6 +19,7 @@ class ChanelStats:
     @catch_exception
     async def daily_routine(self):
         if not message_day_counter.messages:
+            logger.info("No new data for current day")
             return
         messages_champ, symbols_champ = self.collect_stats_for_day()
         self.update_max_stats_for_day()
@@ -30,6 +31,7 @@ class ChanelStats:
     async def weekly_routine(self):
         messages_info, symbols_info = self.collect_stats_for_week()
         if not self.messages_for_week:
+            logger.info("No new data for current week")
             return
         self.update_max_stats_for_week()
         if NOTIFICATION_CHANNEL is not None:
@@ -41,6 +43,7 @@ class ChanelStats:
     async def monthly_routine(self):
         messages_info, symbols_info = self.collect_stats_for_month()
         if not self.messages_for_month:
+            logger.info("No new data for current month")
             return
         self.update_max_stats_for_month()
         if NOTIFICATION_CHANNEL is not None:

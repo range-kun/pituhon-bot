@@ -66,36 +66,27 @@ app.conf.beat_schedule = {
     },
     "user_stats_weekly_routine": {
         "task": "app.tasks.user_stats_wrapper",
-        "schedule": crontab(hour="02", minute="01"),  # day_of_week='wednesday'
+        "schedule": crontab(hour="02", minute="01", day_of_week="monday"),
         "args": (TimePeriod.week.value,),
     },
     "user_stats_monthly_wrapper": {
         "task": "app.tasks.user_stats_wrapper",
-        "schedule": crontab(
-            hour="02",
-            minute="02",
-        ),  # day_of_month='9'
+        "schedule": crontab(hour="02", minute="02", day_of_month="1"),
         "args": (TimePeriod.month.value,),
     },
     "channel_stats_daily_routine": {
         "task": "app.tasks.channel_stats_wrapper",
-        "schedule": crontab(hour="02", minute="03"),
+        "schedule": crontab(hour="19", minute="31"),
         "args": (TimePeriod.day.value,),
     },
     "channel_stats_weekly_routine": {
         "task": "app.tasks.channel_stats_wrapper",
-        "schedule": crontab(
-            hour="02",
-            minute="04",
-        ),  # day_of_week='wednesday'
+        "schedule": crontab(hour="02", minute="04", day_of_week="monday"),
         "args": (TimePeriod.week.value,),
     },
     "channel_stats_monthly_routine": {
         "task": "app.tasks.channel_stats_wrapper",
-        "schedule": crontab(
-            hour="02",
-            minute="05",
-        ),  # day_of_month='9'
+        "schedule": crontab(hour="02", minute="05", day_of_month="1"),
         "args": (TimePeriod.month.value,),
     },
     "delete_redis_info_routine": {
