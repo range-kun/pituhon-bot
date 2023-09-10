@@ -5,6 +5,7 @@ import hashlib
 import aiohttp
 from discord import NotFound, TextChannel, Webhook
 from discord.ext.commands import Bot
+from loguru import logger
 
 from app import TOKEN
 from app.configuration import SECRET_KEY
@@ -19,6 +20,7 @@ def fetch_web_hook_url(token_hash: str) -> str | None:
 def set_web_hook_url(url: str, token_hash: str):
     with redis_connection_manager() as redis_connection:
         redis_connection.set(token_hash, url)
+        logger.warning("Web Hook not created please provide this permission for the bot")
 
 
 def get_token_hash(input_string, hash_algorithm="sha256") -> str:

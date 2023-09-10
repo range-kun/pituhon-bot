@@ -10,7 +10,7 @@ MAX_HIST_RETRIEVE_RECORDS = 10
 VOTE_TIME = 20  # minutes
 DEFAULT_TRANSLATE_LANGUAGE = "russian"
 TEST_CHANNEL_ID = config("TEST_CHANNEL_ID", default=0, cast=int)
-MAIN_CHANNEL_ID = config("MAIN_CHANEL_ID", default=0, cast=int)
+MAIN_CHANNEL_ID = config("MAIN_CHANNEL_ID", default=0, cast=int)
 SERVER_ID = config("SERVER_ID", cast=int, default=0)
 MY_GUILD = discord.Object(id=SERVER_ID)
 UMBRA_ID = config("UMBRA_ID", default=0, cast=int)

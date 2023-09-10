@@ -348,7 +348,7 @@ async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
 
 async def setup_web_hook():
     if not NOTIFICATION_CHANNEL:
-        logger.info("Notification channel no set")
+        logger.info("Webhook not set")
         return
     token_hash = get_token_hash(TOKEN)
     url = fetch_web_hook_url(token_hash)
