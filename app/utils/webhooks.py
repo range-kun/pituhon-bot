@@ -20,7 +20,7 @@ def fetch_web_hook_url(token_hash: str) -> str | None:
 def set_web_hook_url(url: str, token_hash: str):
     with redis_connection_manager() as redis_connection:
         redis_connection.set(token_hash, url)
-        logger.warning(f"Web hook set with url {url}")
+        logger.info(f"Web hook set with url {url}")
 
 
 def get_token_hash(input_string, hash_algorithm="sha256") -> str:
