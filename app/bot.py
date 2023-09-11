@@ -354,6 +354,7 @@ async def setup_web_hook():
     url = fetch_web_hook_url(token_hash)
     channel = bot.get_channel(NOTIFICATION_CHANNEL)
     if url and await verify_url(url, channel, bot):
+        logger.info(f"Chosen webhook with url {url}")
         return
 
     try:

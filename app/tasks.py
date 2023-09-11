@@ -76,7 +76,7 @@ app.conf.beat_schedule = {
     },
     "channel_stats_daily_routine": {
         "task": "app.tasks.channel_stats_wrapper",
-        "schedule": crontab(hour="19", minute="31"),
+        "schedule": crontab(hour="02", minute="03"),
         "args": (TimePeriod.day.value,),
     },
     "channel_stats_weekly_routine": {
