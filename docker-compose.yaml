@@ -79,4 +79,5 @@ services:
 
 volumes:
   pituhon-bot_discord_db_volume:
+     external: true
   redis-data:
