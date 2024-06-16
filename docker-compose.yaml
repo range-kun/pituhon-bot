@@ -37,10 +37,10 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: 70M
+          memory: 140M
         reservations:
           cpus: "0.25"
-          memory: 20M
+          memory: 50M
     restart: always
     build: .
     command: celery -A app.tasks worker --loglevel=info
