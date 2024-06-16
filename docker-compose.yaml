@@ -78,5 +78,5 @@ services:
         retries: 30
 
 volumes:
-  discord_db_volume:
+  pituhon-bot_discord_db_volume:
   redis-data:
