@@ -6,7 +6,8 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from googletrans import LANGUAGES, Translator
 
-from app.configuration import DEFAULT_TRANSLATE_LANGUAGE, MY_GUILD
+from app.configuration import MY_GUILD
+from app.constants import DEFAULT_TRANSLATE_LANGUAGE
 from app.log import logger
 
 LANGUAGES_NAMES = {

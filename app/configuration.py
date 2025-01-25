@@ -5,10 +5,6 @@ import os
 import discord
 from decouple import config
 
-PREFIX = "?"
-MAX_HIST_RETRIEVE_RECORDS = 10
-VOTE_TIME = 20  # minutes
-DEFAULT_TRANSLATE_LANGUAGE = "russian"
 TEST_CHANNEL_ID = config("TEST_CHANNEL_ID", default=0, cast=int)
 MAIN_CHANNEL_ID = config("MAIN_CHANNEL_ID", default=0, cast=int)
 SERVER_ID = config("SERVER_ID", cast=int, default=0)
@@ -48,5 +44,7 @@ REDIS_PORT = config("REDIS_PORT", default="6379")
 
 
 LOGGER_OUTPUT = config("LOGGER_OUTPUT", default="std_err")
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+TIME_ZONE = config("TIME_ZONE", default="UTC")
 # std_err if suppose to be written to console
 # container if it supposes to work in docker_compose

@@ -64,7 +64,7 @@ class MessageDayCounter:
         if not self._messages:
             return
         await self.save_info_to_redis()
-        logger.debug("Successfully send data to redis")
+        logger.info("Successfully send data to redis")
         self.set_stats_to_zero()
 
     @catch_exception
@@ -74,6 +74,7 @@ class MessageDayCounter:
         logger.info("Data from redis have been set to 0")
 
     async def save_info_to_redis(self):
+        logger.info("Process of sending data to redis has been started.")
         authors = json.dumps(self.authors, cls=EnhancedJSONEncoder)
 
         with redis_connection_manager() as redis_connection:

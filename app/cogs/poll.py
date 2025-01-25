@@ -12,7 +12,8 @@ from discord.ext import commands
 from discord.message import Message as DiscordMessage
 from discord.reaction import Reaction
 
-from app.configuration import MY_GUILD, VOTE_TIME
+from app.configuration import MY_GUILD
+from app.constants import VOTE_TIME
 from app.utils import fetch_all_channel_users
 
 

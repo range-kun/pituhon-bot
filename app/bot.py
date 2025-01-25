@@ -17,12 +17,13 @@ from loguru import logger
 from app import NOTIFICATION_CHANNEL, TOKEN
 from app.cogs.birthday_reminder import birthday_reminder
 from app.cogs.poll import PollMessageTrack
-from app.configuration import (
-    MAIN_CHANNEL_ID,
+from app.configuration import MAIN_CHANNEL_ID, MY_GUILD, UMBRA_ID
+from app.constants import (
+    ANSWER_WORDS,
+    GOODBYE_WORDS,
+    HELLO_WORDS,
     MAX_HIST_RETRIEVE_RECORDS,
-    MY_GUILD,
     PREFIX,
-    UMBRA_ID,
 )
 from app.utils import send_yaml_text, today
 from app.utils.data.history_record import HistoryRecord
@@ -35,10 +36,6 @@ from app.utils.webhooks import (
     verify_url,
 )
 from app.utils.youtube_limiter import youtube_links_counter
-
-HELLO_WORDS = ["ky", "ку"]
-ANSWER_WORDS = ["помощь", "какая информация", "команды", "команды сервера", "что здесь делать"]
-GOODBYE_WORDS = ["бб", "bb", "лан я пошел", "я спать"]
 
 
 class Bot(commands.Bot):
@@ -60,10 +57,17 @@ class Bot(commands.Bot):
         await self.tree.sync(guild=MY_GUILD)
 
     async def on_ready(self):
-        birthday_reminder.set_bot(bot)
+        logger.info("Starting bot initialization...")
 
+        logger.info(
+            "Initializing and starting routines: setting bot for "
+            "birthday reminder, starting message counter, and resetting YouTube link counter.",
+        )
+        birthday_reminder.set_bot(discord_bot)
         message_day_counter.counter_routine.start()
         youtube_links_counter.set_limits_to_zero.start()
+
+        logger.info("Setting up web hook.")
         await setup_web_hook()
         logger.info("Bot connected")
 
@@ -204,12 +208,12 @@ class Bot(commands.Bot):
         )
 
 
-bot = Bot()
-bot.remove_command("help")
+discord_bot = Bot()
+discord_bot.remove_command("help")
 
 
 # add phrase
-@bot.tree.command(name="dob", description="Добавить фразу в список", guild=MY_GUILD)
+@discord_bot.tree.command(name="dob", description="Добавить фразу в список", guild=MY_GUILD)
 @app_commands.describe(
     author="Автор цитаты, опционально, если не указать будет использован автор сообщения.",
     text="Текст цитаты",
@@ -222,7 +226,11 @@ async def dob(interaction: discord.Interaction, author: str | None = None, *, te
 
 
 # get random phrase
-@bot.hybrid_command(name="cit", description="Получить рандомную цитату", with_app_command=True)
+@discord_bot.hybrid_command(
+    name="cit",
+    description="Получить рандомную цитату",
+    with_app_command=True,
+)
 @app_commands.guilds(MY_GUILD)
 async def cit(ctx: commands.Context):
     data = PhraseData.get_random_phrase()
@@ -236,7 +244,7 @@ async def cit(ctx: commands.Context):
 
 
 # add history log
-@bot.tree.command(
+@discord_bot.tree.command(
     name="hist",
     description="Добавить запись с текстом text в историю",
     guild=MY_GUILD,
@@ -248,7 +256,7 @@ async def hist(interaction: discord.Interaction, *, text: str):
     )
 
 
-@bot.hybrid_command(name="rec", description="Получить случайное воспоминание")
+@discord_bot.hybrid_command(name="rec", description="Получить случайное воспоминание")
 @app_commands.guilds(MY_GUILD)
 @app_commands.describe(
     date="Дата когда искать. Формат дат: 30-05-2000; 05-2000; 2000",
@@ -272,13 +280,13 @@ async def rec(ctx: commands.Context, date: str | None = None, num: int | None = 
 
 
 # clear
-@bot.command(pass_contetx=True)
+@discord_bot.command(pass_contetx=True)
 @commands.has_permissions(administrator=True)
 async def clear(ctx: commands.Context, amount: int = 10):
     await ctx.channel.purge(limit=amount + 1)
 
 
-@bot.hybrid_command(name="cmds", description="Список доступных команд")
+@discord_bot.hybrid_command(name="cmds", description="Список доступных команд")
 @app_commands.guilds(MY_GUILD)
 async def cmds(ctx: commands.Context):
     output = ""
@@ -314,7 +322,7 @@ async def cmds(ctx: commands.Context):
     await ctx.send(embed=languages_info)
 
 
-@bot.hybrid_command(name="f", description="Получить случайный факт")
+@discord_bot.hybrid_command(name="f", description="Получить случайный факт")
 @app_commands.guilds(MY_GUILD)
 async def f(ctx: commands.Context):
     member_name = ctx.author.name
@@ -333,7 +341,7 @@ async def f(ctx: commands.Context):
     return await ctx.send(f"Интересный факт для {member_name}: \n{fact}")
 
 
-@bot.hybrid_command(name="syll", description="Ограничение ссылок с YouTube (0 для отмены)")
+@discord_bot.hybrid_command(name="syll", description="Ограничение ссылок с YouTube (0 для отмены)")
 @commands.has_permissions(administrator=True)
 @app_commands.guilds(MY_GUILD)
 async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
@@ -347,19 +355,31 @@ async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
 
 
 async def setup_web_hook():
+    logger.info("Starting webhook setup process.")
+
     if not NOTIFICATION_CHANNEL:
-        logger.info("Webhook not set")
-        return
-    token_hash = get_token_hash(TOKEN)
-    url = fetch_web_hook_url(token_hash)
-    channel = bot.get_channel(NOTIFICATION_CHANNEL)
-    if url and await verify_url(url, channel, bot):
-        logger.info(f"Chosen webhook with url {url}")
+        logger.info("Webhook not set due to missing notification channel.")
         return
 
+    logger.info("Attempting to fetch existing webhook URL.")
+    token_hash = get_token_hash(TOKEN)
+    logger.debug(f"Generated token hash: {token_hash}")
+    url = fetch_web_hook_url(token_hash)
+    channel = discord_bot.get_channel(NOTIFICATION_CHANNEL)
+
+    if url:
+        logger.info(f"Existing webhook URL found: {url}. Verifying...")
+        if await verify_url(url, channel, discord_bot):
+            logger.info(f"Webhook verified and active with URL: {url}")
+            return
+        else:
+            logger.warning("Webhook URL verification failed. Attempting to create a new webhook.")
+
     try:
+        logger.info("Creating a new webhook for the notification channel.")
         webhook = await channel.create_webhook(name="Statistic")
     except Forbidden:
         logger.warning("Web Hook not created please provide this permission for the bot")
     else:
+        logger.info(f"Webhook successfully created with URL: {webhook.url}. Saving URL.")
         set_web_hook_url(webhook.url, token_hash)

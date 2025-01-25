@@ -7,7 +7,7 @@ from sqlalchemy.engine import Row
 from sqlalchemy.sql import extract
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
-from app.configuration import MAX_HIST_RETRIEVE_RECORDS
+from app.constants import MAX_HIST_RETRIEVE_RECORDS
 from app.log import logger
 from app.utils.data import Data
 

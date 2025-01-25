@@ -53,15 +53,31 @@ class WebHookSender:
         self.webhook_url = self.fetch_webhook_url()
 
     async def send_data(self, **kwargs):
-        async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(**kwargs)
+        if not self.webhook_url:
+            logger.error("Cannot send data: Webhook URL is not set.")
+            return
+        try:
+            async with aiohttp.ClientSession() as session:
+                webhook = Webhook.from_url(self.webhook_url, session=session)
+                await webhook.send(**kwargs)
+        except Exception as e:
+            logger.exception(f"Failed to send data via webhook: {e}")
 
     @staticmethod
     def fetch_webhook_url() -> str | None:
-        token_hash = get_token_hash(TOKEN)
-        url = fetch_web_hook_url(token_hash)
-        return url
+        logger.info("Fetching webhook URL...")
+        try:
+            token_hash = get_token_hash(TOKEN)
+            logger.debug(f"Generated token hash: {token_hash}")
+            url = fetch_web_hook_url(token_hash)
+            if url:
+                logger.info("Webhook URL fetched successfully.")
+            else:
+                logger.warning("No webhook URL found in the database.")
+            return url
+        except Exception as e:
+            logger.exception(f"Error while fetching webhook URL: {e}")
+            return None
 
 
 webhook_sender = WebHookSender()

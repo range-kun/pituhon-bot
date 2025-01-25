@@ -24,7 +24,7 @@ class YouTubeLinksCounter:
         return True
 
     @tasks.loop(minutes=60)
-    async def set_limits_to_zero(self):
+    async def set_limits_to_zero(self) -> None:
         self.youtube_limits = defaultdict(int)
 
     def get_time_to_reset(self) -> int:

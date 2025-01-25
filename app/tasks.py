@@ -3,10 +3,9 @@ from enum import Enum
 
 from celery import Celery
 from celery.schedules import crontab
-from celery.utils.log import get_task_logger
 
 from app.cogs.birthday_reminder import birthday_reminder
-from app.configuration import REDIS_HOST, REDIS_PORT
+from app.configuration import REDIS_HOST, REDIS_PORT, TIME_ZONE
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
 from app.utils.message_stats_routine.user_stats_routine import user_stats
@@ -14,12 +13,9 @@ from app.utils.message_stats_routine.user_stats_routine import user_stats
 redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 
 app = Celery("tasks", broker=redis_url)
-app.conf.timezone = "Europe/Moscow"
+app.conf.timezone = TIME_ZONE
 app.conf.enable_utc = False
-app.conf.USE_TZ = True
 app.conf.worker_concurrency = 1
-
-logger = get_task_logger(__name__)
 
 
 class TimePeriod(Enum):
@@ -59,9 +55,7 @@ def utils_daily_wrapper(scope: str):
 app.conf.beat_schedule = {
     "user_stats_daily_routine": {
         "task": "app.tasks.user_stats_wrapper",
-        "schedule": crontab(
-            hour="02",
-        ),
+        "schedule": crontab(hour="02", minute="00"),
         "args": (TimePeriod.day.value,),
     },
     "user_stats_weekly_routine": {
