@@ -19,6 +19,7 @@ def fetch_web_hook_url(token_hash: str) -> str | None:
 
 def set_web_hook_url(url: str, token_hash: str):
     with redis_connection_manager() as redis_connection:
+        logger.debug(f"Attempt to set webhook with next token_hash: {token_hash}")
         redis_connection.set(token_hash, url)
         logger.info(f"Web hook set with url {url}")
 
