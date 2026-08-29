@@ -1,4 +1,4 @@
-FROM python:3.11.1-slim-buster as builder
+FROM python:3.11.1-slim-bullseye as builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.t
 #####
 # FINAL #
 #######
-FROM python:3.11.1-slim-buster
+FROM python:3.11.1-slim-bullseye
 WORKDIR /app
 
 RUN apt-get -y update && apt-get install -y libpq-dev  \
