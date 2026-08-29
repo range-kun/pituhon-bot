@@ -55,6 +55,9 @@ class WebHookSender:
 
     async def send_data(self, **kwargs):
         if not self.webhook_url:
+            logger.warning("Webhook URL not set. Trying to refetch it..")
+            self.webhook_url = self.fetch_webhook_url()
+        if not self.webhook_url:
             logger.error("Cannot send data: Webhook URL is not set.")
             return
         try:

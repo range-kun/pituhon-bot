@@ -3,21 +3,23 @@ from __future__ import annotations
 import random
 import re
 import urllib.parse
+from datetime import time as dt_time
 from os import path
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import discord
 import yaml
 from bs4 import BeautifulSoup
 from discord import Forbidden, app_commands, errors
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import CommandError
 from loguru import logger
 
 from app import NOTIFICATION_CHANNEL, TOKEN
 from app.cogs.birthday_reminder import birthday_reminder
 from app.cogs.poll import PollMessageTrack
-from app.configuration import MAIN_CHANNEL_ID, MY_GUILD, UMBRA_ID
+from app.configuration import MAIN_CHANNEL_ID, MY_GUILD, TIME_ZONE, UMBRA_ID
 from app.constants import (
     ANSWER_WORDS,
     GOODBYE_WORDS,
@@ -69,6 +71,7 @@ class Bot(commands.Bot):
 
         logger.info("Setting up web hook.")
         await setup_web_hook()
+        ensure_web_hook.start()
         logger.info("Bot connected")
 
     async def on_reaction_add(self, reaction, user):
@@ -383,3 +386,8 @@ async def setup_web_hook():
     else:
         logger.info(f"Webhook successfully created with URL: {webhook.url}. Saving URL.")
         set_web_hook_url(webhook.url, token_hash)
+
+
+@tasks.loop(time=dt_time(hour=23, minute=59, tzinfo=ZoneInfo(TIME_ZONE)))
+async def ensure_web_hook():
+    await setup_web_hook()

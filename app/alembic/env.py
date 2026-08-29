@@ -1,9 +1,9 @@
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.exc import InvalidRequestError
 
-from alembic import context
 from app import configuration as conf_data
 from app.log import logger
 from app.utils.data import Data
