@@ -10,7 +10,7 @@ from discord import Message
 from discord.ext import tasks
 from redis.commands.json.path import Path
 
-from app.configuration import REDIS_HOST, REDIS_PORT
+from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from app.log import logger
 from app.utils import catch_exception, redis_connection_manager
 
@@ -51,7 +51,7 @@ class MessageDayCounter:
 
     @staticmethod
     def get_redis_connection():
-        connection = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+        connection = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
         try:
             connection.ping()
         except redis.exceptions.TimeoutError:
@@ -100,7 +100,7 @@ class MessageDayCounter:
         return self._symbols + int(redis_symbols)
 
     @property
-    def authors(self) -> dict[int:UserStatsForCurrentDay]:
+    def authors(self) -> dict[int, UserStatsForCurrentDay]:
         try:
             with redis_connection_manager() as redis_connection:
                 redis_authors = json.loads(redis_connection.json().get("authors"))

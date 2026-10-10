@@ -1,16 +1,17 @@
 import asyncio
 from enum import Enum
+from urllib.parse import quote
 
 from celery import Celery
 from celery.schedules import crontab
 
 from app.cogs.birthday_reminder import birthday_reminder
-from app.configuration import REDIS_HOST, REDIS_PORT, TIME_ZONE
+from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, TIME_ZONE
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.message_stats_routine.chanel_stats_routine import channel_stats
 from app.utils.message_stats_routine.user_stats_routine import user_stats
 
-redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+redis_url = f"redis://:{quote(REDIS_PASSWORD or '', safe='')}@{REDIS_HOST}:{REDIS_PORT}/0"
 
 app = Celery("tasks", broker=redis_url)
 app.conf.timezone = TIME_ZONE

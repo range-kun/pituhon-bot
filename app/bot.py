@@ -11,7 +11,7 @@ import aiohttp
 import discord
 import yaml
 from bs4 import BeautifulSoup
-from discord import Forbidden, app_commands, errors
+from discord import Forbidden, HTTPException, Webhook, app_commands, errors
 from discord.ext import commands, tasks
 from discord.ext.commands import CommandError
 from loguru import logger
@@ -32,10 +32,10 @@ from app.utils.data.history_record import HistoryRecord
 from app.utils.data.phrase import PhraseData
 from app.utils.message_stats_routine import message_day_counter
 from app.utils.webhooks import (
-    fetch_web_hook_url,
+    delete_webhook_url,
+    fetch_webhook_url,
     get_token_hash,
     set_web_hook_url,
-    verify_url,
 )
 from app.utils.youtube_limiter import youtube_links_counter
 
@@ -357,6 +357,9 @@ async def set_youtube_link_limit(ctx: commands.Context, *, limit: int):
     await ctx.send(f"Лимит ссылок с ютуба в час равен {limit}")
 
 
+WEBHOOK_NAME = "Statistic"
+
+
 async def setup_web_hook():
     logger.info("Starting webhook setup process.")
 
@@ -367,25 +370,59 @@ async def setup_web_hook():
     logger.info("Attempting to fetch existing webhook URL.")
     token_hash = get_token_hash(TOKEN)
     logger.debug(f"Generated token hash: {token_hash}")
-    url = fetch_web_hook_url(token_hash)
+    saved_url = fetch_webhook_url(token_hash)
     channel = discord_bot.get_channel(NOTIFICATION_CHANNEL)
 
-    if url:
-        logger.info(f"Existing webhook URL found: {url}. Verifying...")
-        if await verify_url(url, channel, discord_bot):
-            logger.info(f"Webhook verified and active with URL: {url}")
-            return
-        else:
-            logger.warning("Webhook URL verification failed. Attempting to create a new webhook.")
+    if channel is None:
+        logger.warning(
+            f"Notification channel with name {NOTIFICATION_CHANNEL} not found, skipping webhook setup.",
+        )
+        return
 
     try:
-        logger.info("Creating a new webhook for the notification channel.")
-        webhook = await channel.create_webhook(name="Statistic")
+        own_webhooks = [
+            webhook
+            for webhook in await channel.webhooks()
+            if webhook.name == WEBHOOK_NAME
+            and webhook.user
+            and webhook.user.id == discord_bot.user.id
+        ]
+        if own_webhooks:
+            webhook = await _get_own_webhook(own_webhooks, saved_url, token_hash)
+        else:
+            logger.info("Creating a new webhook for the notification channel.")
+            webhook = await channel.create_webhook(name=WEBHOOK_NAME)
     except Forbidden:
         logger.warning("Web Hook not created please provide this permission for the bot")
-    else:
-        logger.info(f"Webhook successfully created with URL: {webhook.url}. Saving URL.")
-        set_web_hook_url(webhook.url, token_hash)
+        return
+    except HTTPException as e:
+        logger.warning(f"Webhook creation failed with errors {e}")
+        return
+
+    logger.info(f"Webhook successfully created with URL: {webhook.url}. Saving URL.")
+    set_web_hook_url(webhook.url, token_hash)
+
+
+async def _get_own_webhook(
+    own_webhooks: list[Webhook],
+    saved_url: str | None,
+    token_hash: str,
+) -> Webhook:
+    webhook = next((webhook for webhook in own_webhooks if webhook.url == saved_url), None)
+    if webhook is None:
+        if saved_url:
+            logger.warning(f"Webhook with saved url {saved_url} not found, in cache")
+            delete_webhook_url(token_hash)
+        webhook = own_webhooks[0]
+
+    logger.info(f"Webhook with url found {webhook.url}", webhook.url)
+    for own_webhook in own_webhooks:
+        if own_webhook.url == webhook.url:
+            continue
+        logger.debug(f"Deleting duplicate webhook with url {webhook.url} and name {webhook.name}")
+        await own_webhook.delete()
+
+    return webhook
 
 
 @tasks.loop(time=dt_time(hour=23, minute=59, tzinfo=ZoneInfo(TIME_ZONE)))

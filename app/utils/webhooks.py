@@ -12,9 +12,14 @@ from app.configuration import SECRET_KEY
 from app.utils import redis_connection_manager
 
 
-def fetch_web_hook_url(token_hash: str) -> str | None:
+def fetch_webhook_url(token_hash: str) -> str | None:
     with redis_connection_manager() as redis_connection:
         return redis_connection.get(token_hash)
+
+
+def delete_webhook_url(token_hash: str) -> None:
+    with redis_connection_manager() as redis_connection:
+        redis_connection.delete(token_hash)
 
 
 def set_web_hook_url(url: str, token_hash: str):
@@ -66,6 +71,7 @@ class WebHookSender:
                 await webhook.send(**kwargs)
         except Exception as e:
             logger.exception(f"Failed to send data via webhook: {e}")
+            self.webhook_url = None
 
     @staticmethod
     def fetch_webhook_url() -> str | None:
@@ -73,7 +79,7 @@ class WebHookSender:
         try:
             token_hash = get_token_hash(TOKEN)
             logger.debug(f"Generated token hash: {token_hash}")
-            url = fetch_web_hook_url(token_hash)
+            url = fetch_webhook_url(token_hash)
             if url:
                 logger.info("Webhook URL fetched successfully.")
             else:

@@ -8,7 +8,7 @@ from discord import Member
 from discord.channel import TextChannel
 from discord.ext import commands
 
-from app.configuration import REDIS_HOST, REDIS_PORT
+from app.configuration import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from app.log import logger
 
 
@@ -56,8 +56,8 @@ def catch_exception(method):
 
 
 @contextmanager
-def redis_connection_manager(host=REDIS_HOST, port=REDIS_PORT):
-    connection = redis.Redis(host=host, port=port, decode_responses=True)
+def redis_connection_manager(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD):
+    connection = redis.Redis(host=host, port=port, decode_responses=True, password=password)
     try:
         connection.ping()
     except redis.exceptions.TimeoutError:

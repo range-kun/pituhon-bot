@@ -1,4 +1,4 @@
-FROM python:3.11.1-slim-bullseye as builder
+FROM python:3.11-slim-bookworm as builder
 
 WORKDIR /app
 
@@ -14,11 +14,10 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.t
 #####
 # FINAL #
 #######
-FROM python:3.11.1-slim-bullseye
+FROM python:3.11-slim-bookworm
 WORKDIR /app
 
-RUN apt-get -y update && apt-get install -y libpq-dev  \
-    && apt-get -y autoremove
+RUN apt-get update && apt-get -y install libpq-dev
 
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .

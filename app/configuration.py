@@ -41,6 +41,7 @@ DB_PORT = config("DB_PORT", cast=int, default=5432)
 # Redis
 REDIS_HOST = config("REDIS_HOST", default="redis")
 REDIS_PORT = config("REDIS_PORT", default="6379")
+REDIS_PASSWORD = config("REDIS_PASSWORD", default=None)
 
 
 LOGGER_OUTPUT = config("LOGGER_OUTPUT", default="std_err")
