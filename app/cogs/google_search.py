@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import random
 import re
@@ -11,6 +12,8 @@ from discord import app_commands, errors
 from discord.ext import commands
 
 from app.configuration import API_KEY, MAIN_CHANNEL_ID, MY_GUILD, SEARCH_ENGINE_ID
+
+IMAGE_CHECK_TIMEOUT = aiohttp.ClientTimeout(total=2)
 
 
 class Google(commands.Cog):
@@ -49,6 +52,9 @@ class Google(commands.Cog):
                 "почертить в автокаде, например.",
             )
 
+        # Google request + image checks can take longer than 3s for slash command response
+        await ctx.defer()
+
         async with aiohttp.ClientSession() as session:
             resp = await session.get(
                 "https://www.googleapis.com/customsearch/v1?q="
@@ -63,20 +69,35 @@ class Google(commands.Cog):
             )
             result = json.loads(await resp.text())
 
-        try:
-            query_length = len(result["items"])
-        except Exception:
-            return await ctx.send(
-                "По данному запросу ничего не найдено.Попробуйте использовать более общий запрос.",
+            items = result.get("items") or []
+            if not items:
+                return await ctx.send(
+                    "По данному запросу ничего не найдено. Попробуйте использовать более общий запрос.",
+                )
+
+            links = [item["link"] for item in items]
+            checks = await asyncio.gather(
+                *(self.is_image_available(session, link) for link in links),
             )
 
-        if query_length < 1:
-            return await ctx.send(
-                "По данному запросу ничего не найдено. Попробуйте использовать более общий запрос.",
-            )
-        random_number = random.randint(0, query_length - 1)
-        await ctx.send(f"{urllib.parse.unquote(result['items'][random_number]['link'])} ")
+        available_links = [link for link, is_available in zip(links, checks) if is_available]
+        if available_links:
+            link = random.choice(available_links)
+        else:
+            # Google thumbnails are hosted on gstatic and almost always load
+            item = random.choice(items)
+            link = item.get("image", {}).get("thumbnailLink") or item["link"]
+
+        await ctx.send(link)
         await ctx.channel.send('Картинка по запросу: "' + message + '"')
+
+    @staticmethod
+    async def is_image_available(session: aiohttp.ClientSession, url: str) -> bool:
+        try:
+            async with session.get(url, timeout=IMAGE_CHECK_TIMEOUT) as resp:
+                return resp.status == 200 and resp.content_type.startswith("image/")
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+            return False
 
     @app_commands.command(name="g", description="Сделать запрос к Google")
     @commands.cooldown(1, 17)
